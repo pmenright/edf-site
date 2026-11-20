@@ -1,0 +1,36 @@
+# Push to dev: check that it builds, then republish so enrightdesignfoundry.com/dev/ shows it.
+# The live site (main) is rebuilt from main in the same run, unchanged.
+name: Dev preview
+
+on:
+  push:
+    branches: [dev]
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: dev-preview
+  cancel-in-progress: true
+
+jobs:
+  check-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Build (fails here if dev is broken, and nothing is published)
+        run: |
+          npm ci
+          npm run build
+        env:
+          BASE_PATH: /dev/
+          SITE_ENV: dev
+      - name: Publish (runs the Pages workflow on main, which builds main and dev)
+        run: gh workflow run deploy.yml --ref main --repo "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ github.token }}

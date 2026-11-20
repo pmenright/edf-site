@@ -1,4 +1,11 @@
-# Builds the site and publishes it to GitHub Pages on every push to main.
+# Publishes the site to GitHub Pages: the live site from `main` at the root, and the work-in-progress
+# copy from `dev` at /dev/ (enrightdesignfoundry.com/dev/). Every run builds both, so a push to either
+# branch never changes the other one's pages.
+#
+# It runs on pushes to main. Pushes to dev go through dev-preview.yml, which checks that dev builds and
+# then starts this workflow on main (GitHub only lets the main branch deploy to Pages unless that
+# setting is changed, so dev never deploys by itself).
+#
 # One-time setup: repo Settings > Pages > Source: "GitHub Actions".
 name: Deploy to GitHub Pages
 
@@ -20,21 +27,58 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out main (the live site)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: live
+
+      # No dev branch yet (or it was deleted): skip the preview and publish the live site alone.
+      - name: Check out dev (the preview)
+        id: dev
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          path: preview
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npm run build
+          cache-dependency-path: |
+            live/package-lock.json
+            preview/package-lock.json
+
+      - name: Build the live site
+        working-directory: live
+        run: |
+          npm ci
+          npm run build
         env:
-          # The site lives at the root of enrightdesignfoundry.com. (For a test copy at
-          # https://USERNAME.github.io/REPO/ without the custom domain, this would be
-          # /${{ github.event.repository.name }}/ instead.)
+          # The site lives at the root of enrightdesignfoundry.com.
           BASE_PATH: /
+
+      # A broken dev build never blocks the live site: it just leaves the preview out of this run.
+      - name: Build the dev preview
+        id: preview
+        if: steps.dev.outcome == 'success'
+        continue-on-error: true
+        working-directory: preview
+        run: |
+          npm ci
+          npm run build
+        env:
+          BASE_PATH: /dev/
+          SITE_ENV: dev
+
+      - name: Put the preview at /dev/
+        if: steps.preview.outcome == 'success'
+        run: cp -R preview/dist live/dist/dev
+
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: live/dist
 
   deploy:
     needs: build
