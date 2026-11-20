@@ -1,5 +1,5 @@
 {
-  "_note": "Content for the about / resume page (/about/). Text comes from the Nov 2026 resume PDF. Bullets marked \"key\": true are the ones shown on the desktop resume board (it has to fit one screen); phones show every bullet, like the PDF. Award links go to the Navy's official award announcements (NAVADMIN messages) for each year.",
+  "_note": "Content for the about / resume page (/about/). Text comes from the Nov 2026 resume PDF. Bullets marked \"key\": true are the ones shown on the desktop resume board (it has to fit one screen); phones show every bullet, like the PDF. Award links come from the \"Navy Awards Reference\" page in Affine: the Navy's official results messages (NAVADMIN) for each year, and DVIDS for 2018, when the Navy didn't publish a NAVADMIN. The Emmy nomination has no public record yet, so it links to the documentary itself.",
   "name": "Patrick Enright",
   "title": "Senior Creative Producer",
   "tagline": "U.S. Navy Veteran",
@@ -116,7 +116,8 @@
       "links": [
         { "label": "2014", "href": "https://www.mynavyhr.navy.mil/Portals/55/Messages/NAVADMIN/NAV2015/NAV15163.txt" },
         { "label": "2015", "href": "https://www.mynavyhr.navy.mil/Portals/55/Messages/NAVADMIN/NAV2016/NAV16115.txt" },
-        { "label": "2017", "href": "https://www.mynavyhr.navy.mil/Portals/55/Messages/NAVADMIN/NAV2018/NAV18117.txt" }
+        { "label": "2017", "href": "https://www.mynavyhr.navy.mil/Portals/55/Messages/NAVADMIN/NAV2018/NAV18117.txt" },
+        { "label": "2018", "href": "https://www.dvidshub.net/awards/dma/2018?branch=navy" }
       ]
     },
     {

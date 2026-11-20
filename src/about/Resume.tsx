@@ -259,7 +259,7 @@ function HonorEntry({ honor, compact }: { honor: Honor; compact: boolean }) {
                 href={l.href}
                 target="_blank"
                 rel="noopener"
-                aria-label={`${honor.title}: ${/^\d{4}$/.test(l.label) ? `${l.label} official announcement` : l.label} (opens in a new tab)`}
+                aria-label={`${honor.title}: ${/^\d{4}$/.test(l.label) ? `${l.label} results` : l.label} (opens in a new tab)`}
                 className="resume-record"
               >
                 {l.label}
