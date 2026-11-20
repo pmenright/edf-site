@@ -41,15 +41,13 @@ interface NavColumnProps extends NavProps {
   onRail?: (el: HTMLElement | null) => void
   /** Logo click: back to the hero. */
   onHome?: () => void
-  /** RESUME goes here: the about / resume page. Without it, RESUME opens the PDF. */
+  /** RESUME: opens the about / resume panel. Without it, RESUME goes to `resumeHref`, or the PDF. */
+  onResume?: () => void
   resumeHref?: string
-  /** RESUME shows its selected art: we're on the about / resume page. */
+  /** RESUME shows its selected art: the about / resume panel is open. */
   resumeActive?: boolean
-  /**
-   * On other pages (the about / resume page), DESIGN and VIDEO are links back to that side of the
-   * portfolio instead of switches, and neither shows as selected.
-   */
-  workLinks?: { design: string; video: string }
+  /** DESIGN or VIDEO shows as selected (not while the about / resume panel is open). Default true. */
+  categoryActive?: boolean
 }
 
 /**
@@ -61,7 +59,19 @@ interface NavColumnProps extends NavProps {
  * touch screen), sliding over the work, and closes again when they leave. The buttons can only be
  * clicked in their wide form: while the rail is docked, a click just opens it.
  */
-export function NavColumn({ category, onCategory, pin, squeeze, slotRef, onRail, onHome, resumeHref, resumeActive = false, workLinks }: NavColumnProps) {
+export function NavColumn({
+  category,
+  onCategory,
+  pin,
+  squeeze,
+  slotRef,
+  onRail,
+  onHome,
+  onResume,
+  resumeHref,
+  resumeActive = false,
+  categoryActive = true,
+}: NavColumnProps) {
   const reduce = useReducedMotion()
   const nav = useRef<HTMLElement | null>(null)
 
@@ -246,32 +256,30 @@ export function NavColumn({ category, onCategory, pin, squeeze, slotRef, onRail,
         <ArtButton
           name="design-wide"
           label="Design"
-          active={!workLinks && category === 'design'}
-          onClick={workLinks ? undefined : () => onCategory('design')}
-          href={workLinks?.design}
+          active={categoryActive && category === 'design'}
+          onClick={() => onCategory('design')}
           className="relative mt-[18px] w-full"
           boxClassName="rail-btn mb-[6px]"
           artClassName="rail-art rail-wide"
         >
           <ButtonArt
             name="design-square"
-            active={!workLinks && category === 'design'}
+            active={categoryActive && category === 'design'}
             className="rail-square-art rail-square pointer-events-none absolute top-0 left-1/2 -translate-x-1/2"
           />
         </ArtButton>
         <ArtButton
           name="video-wide"
           label="Video"
-          active={!workLinks && category === 'video'}
-          onClick={workLinks ? undefined : () => onCategory('video')}
-          href={workLinks?.video}
+          active={categoryActive && category === 'video'}
+          onClick={() => onCategory('video')}
           className="relative mt-[5px] w-full"
           boxClassName="rail-btn mb-[6px]"
           artClassName="rail-art rail-wide"
         >
           <ButtonArt
             name="video-square"
-            active={!workLinks && category === 'video'}
+            active={categoryActive && category === 'video'}
             className="rail-square-art rail-square pointer-events-none absolute top-0 left-1/2 -translate-x-1/2"
           />
         </ArtButton>
@@ -280,7 +288,8 @@ export function NavColumn({ category, onCategory, pin, squeeze, slotRef, onRail,
           <ArtButton
             name="resume-wide"
             label="Resume"
-            href={resumeHref ?? resumePdf}
+            onClick={onResume}
+            href={onResume ? undefined : (resumeHref ?? resumePdf)}
             active={resumeActive}
             className="relative mb-[10px] w-full"
             boxClassName="rail-btn mb-[6px]"
@@ -314,9 +323,9 @@ export function NavColumn({ category, onCategory, pin, squeeze, slotRef, onRail,
 
 /**
  * Phones and upright tablets: the bar across the top of the page. CONTACT opens the contact popup;
- * RESUME goes to the about / resume page (or, on that page, WORK goes back to the portfolio).
+ * RESUME opens the about / resume panel at the resume (or, without `onResume`, the PDF).
  */
-export function MobileContactBar({ resumeHref, workHref }: { resumeHref?: string; workHref?: string }) {
+export function MobileContactBar({ onResume }: { onResume?: () => void }) {
   // pb-3 makes each one a 44px-tall target; the extra hangs invisibly below the bar.
   const link =
     'block w-full cursor-pointer pb-3 text-center font-ddc text-[clamp(16px,5vw,22px)] leading-8 text-sand outline-offset-[-3px] focus-visible:outline-2 focus-visible:outline-sand md:text-[18px]'
@@ -329,12 +338,12 @@ export function MobileContactBar({ resumeHref, workHref }: { resumeHref?: string
         </button>
       </div>
       <div className={cell}>
-        {workHref ? (
-          <a href={workHref} className={link}>
-            Work
-          </a>
+        {onResume ? (
+          <button type="button" onClick={onResume} className={link}>
+            Resume
+          </button>
         ) : (
-          <a href={resumeHref ?? resumePdf} className={link}>
+          <a href={resumePdf} className={link}>
             Resume
           </a>
         )}
@@ -345,9 +354,10 @@ export function MobileContactBar({ resumeHref, workHref }: { resumeHref?: string
 
 /**
  * Mobile and tablet: the DESIGN / VIDEO row under the hero. Once scrolled to, it sticks to the top of
- * the screen, so switching sides never means scrolling back up. Its height is --mnav-h (index.css).
+ * the screen, so switching sides never means scrolling back up (and from the about / resume panel,
+ * either one goes back to the work). Its height is --mnav-h (index.css).
  */
-export function MobileNavRow({ category, onCategory }: NavProps) {
+export function MobileNavRow({ category, onCategory, categoryActive = true }: NavProps & { categoryActive?: boolean }) {
   const art = 'h-[35px] w-[99px] sm:h-[40px] sm:w-[113px] md:h-[46px] md:w-[130px] short:h-[35px] short:w-[99px]'
   const button = 'min-h-[44px] w-1/2 items-center sm:w-[160px]'
   return (
@@ -359,7 +369,7 @@ export function MobileNavRow({ category, onCategory }: NavProps) {
       <ArtButton
         name="design-wide"
         label="Design"
-        active={category === 'design'}
+        active={categoryActive && category === 'design'}
         onClick={() => onCategory('design')}
         className={button}
         boxClassName={art}
@@ -367,7 +377,7 @@ export function MobileNavRow({ category, onCategory }: NavProps) {
       <ArtButton
         name="video-wide"
         label="Video"
-        active={category === 'video'}
+        active={categoryActive && category === 'video'}
         onClick={() => onCategory('video')}
         className={button}
         boxClassName={art}

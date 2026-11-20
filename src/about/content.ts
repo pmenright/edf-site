@@ -1,10 +1,9 @@
 import aboutData from '../content/about.json'
 import resumeData from '../content/resume.json'
 
-/** One line of a job: the desktop resume board shows only the `key` ones. */
+/** One line of a job. */
 export interface Bullet {
   text: string
-  key?: boolean
 }
 
 /** A posting within a job (the Navy's commands). */
@@ -17,6 +16,10 @@ export interface Unit {
 
 export interface Job {
   org: string
+  /** Short name on the job's tab (desktop board): "Freelance", "Bowhead"... */
+  tab: string
+  /** Years under the tab name: "2013 to now" */
+  years: string
   /** "Freelance" */
   kind?: string
   location?: string
@@ -30,7 +33,7 @@ export interface Job {
 
 export interface Honor {
   title: string
-  /** One line for the desktop board. */
+  /** A one-line version (not shown on the site any more; kept for reference). */
   short: string
   /** The full entry, as on the PDF. */
   text: string

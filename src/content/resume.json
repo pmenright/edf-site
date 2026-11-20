@@ -1,5 +1,5 @@
 {
-  "_note": "Content for the about / resume page (/about/). Text comes from the Nov 2026 resume PDF. Bullets marked \"key\": true are the ones shown on the desktop resume board (it has to fit one screen); phones show every bullet, like the PDF. Award links come from the \"Navy Awards Reference\" page in Affine: the Navy's official results messages (NAVADMIN) for each year, and DVIDS for 2018, when the Navy didn't publish a NAVADMIN. The Emmy nomination has no public record yet, so it links to the documentary itself.",
+  "_note": "Content for the about / resume panel (the RESUME button on the portfolio; links like /#about and /#about/resume). Text comes from the Nov 2026 resume PDF, all of it: every job, bullet, honor and school shows on desktop and phones alike. \"tab\" and \"years\" label each job's tab on the desktop board. Award links come from the \"Navy Awards Reference\" page in Affine: the Navy's official results messages (NAVADMIN) for each year, and DVIDS for 2018, when the Navy didn't publish a NAVADMIN. The Emmy nomination has no public record yet, so it links to the documentary itself.",
   "name": "Patrick Enright",
   "title": "Senior Creative Producer",
   "tagline": "U.S. Navy Veteran",
@@ -7,38 +7,30 @@
   "work": [
     {
       "org": "Enright Design Foundry",
+      "tab": "Freelance",
+      "years": "2013 to now",
       "kind": "Freelance",
       "location": "Austin, Texas",
       "title": "Owner and Designer",
       "dates": "July 2013 to present",
       "current": true,
       "bullets": [
-        {
-          "key": true,
-          "text": "Delivered more than 20 design, photo, and video projects, including brand identities, logotypes, look books, motion graphics, websites, print, and social media assets for clients across a variety of industries (government, food and beverage, entertainment, tech, medical)."
-        },
-        {
-          "key": true,
-          "text": "Built Contrast Bench, a color tool that checks palettes against WCAG and APCA accessibility standards, as an Adobe Illustrator plug-in and a web app."
-        },
+        { "text": "Delivered more than 20 design, photo, and video projects, including brand identities, logotypes, look books, motion graphics, websites, print, and social media assets for clients across a variety of industries (government, food and beverage, entertainment, tech, medical)." },
+        { "text": "Built Contrast Bench, a color tool that checks palettes against WCAG and APCA accessibility standards, as an Adobe Illustrator plug-in and a web app." },
         { "text": "Supported photo shoots for live music events and edited B-roll and photography for clients including iHeartRadio and Google." },
         { "text": "Real estate marketing service: video walkthroughs, 360-degree tours, photography, and listing websites." }
       ]
     },
     {
       "org": "Fathom5 / Caliburn Technologies",
+      "tab": "Fathom5 / Caliburn",
+      "years": "2021 to 2026",
       "location": "Austin, Texas",
       "title": "Senior Creative Designer",
       "dates": "January 2021 to October 2026",
       "bullets": [
-        {
-          "key": true,
-          "text": "Designed pitch decks and sales materials targeting organizations across the private and public sectors, supporting more than 20 multimillion-dollar contracts, including one Navy Program of Record, and helping raise more than $4 million in venture capital."
-        },
-        {
-          "key": true,
-          "text": "Built accessibility-first design systems for three products, structured for AI coding tools, enabling engineering teams to quickly prototype features across platforms at about 90% brand compliance from the first prompt."
-        },
+        { "text": "Designed pitch decks and sales materials targeting organizations across the private and public sectors, supporting more than 20 multimillion-dollar contracts, including one Navy Program of Record, and helping raise more than $4 million in venture capital." },
+        { "text": "Built accessibility-first design systems for three products, structured for AI coding tools, enabling engineering teams to quickly prototype features across platforms at about 90% brand compliance from the first prompt." },
         { "text": "Designed UX/UI for six apps, including a virtual reality app, creating every on-screen element and icon by hand, taking cues from Material Design and Apple Human Interface Guidelines." },
         { "text": "Ran usability tests with active-duty Marines during live exercises at Marine Corps Air Station Yuma, building a feedback loop that turned their input into design fixes within days, and later within 24 hours." },
         { "text": "Directed creative and production for five virtual and in-person conferences with more than 3,700 total attendees, including live broadcast graphics, camera operation, promotional and documentary video, web design, event photography, site surveys, and show scripts." },
@@ -51,14 +43,13 @@
     },
     {
       "org": "Bowhead, supporting Army Futures Command",
+      "tab": "Bowhead",
+      "years": "2019 to 2020",
       "location": "Austin, Texas",
       "title": "Content Producer",
       "dates": "June 2019 to December 2020",
       "bullets": [
-        {
-          "key": true,
-          "text": "Designed the branding and website for Project Convergence 2020, an internationally recognized Department of Defense event, with the branding still in use for the annual event involving all five branches of the U.S. military and allied nations."
-        },
+        { "text": "Designed the branding and website for Project Convergence 2020, an internationally recognized Department of Defense event, with the branding still in use for the annual event involving all five branches of the U.S. military and allied nations." },
         { "text": "Produced a new branding suite with a range of design assets (responsive logo marks, style guides, and templates) using Illustrator, improving marketing efforts toward small-business partners." },
         { "text": "Produced, shot, and edited videos supporting command messaging, including a four-part documentary and three recorded soldier touchpoint events with more than 24,000 views." },
         { "text": "Created digital and print design products for 20 PR initiatives with up to 2,000 attendees, producing branding for internal and community-wide programs with public figures in attendance." },
@@ -67,9 +58,13 @@
     },
     {
       "org": "U.S. Navy",
+      "tab": "U.S. Navy",
+      "years": "2013 to 2019",
       "title": "Mass Communication Specialist 1st Class (MC1, E-6)",
       "dates": "February 2013 to February 2019",
-      "bullets": [{ "text": "Promoted to E-6, a supervisory grade, in 4.5 years." }],
+      "bullets": [
+        { "text": "Promoted to E-6, a supervisory grade, in 4.5 years." }
+      ],
       "units": [
         {
           "org": "Defense Media Activity",
@@ -78,10 +73,7 @@
           "bullets": [
             { "text": "Shot video for the documentary “Boot Camp: Making a Sailor” (2018), achieving more than 10 million views and a regional Emmy nomination in the Documentary, Cultural/Topical category (National Capital Chesapeake Bay chapter)." },
             { "text": "Led 22 sailors as lead petty officer, giving first-line editorial approval on All Hands video, photo, and written products." },
-            {
-              "key": true,
-              "text": "Edited more than 10 issues of All Hands, the Navy's flagship magazine, laying out and designing content from a 20-person team of sailors and civilian staff."
-            },
+            { "text": "Edited more than 10 issues of All Hands, the Navy's flagship magazine, laying out and designing content from a 20-person team of sailors and civilian staff." },
             { "text": "Served as on-camera talent for a STEM virtual field trip filmed at Space and Naval Warfare Systems Center Pacific and broadcast to classrooms nationwide, earning praise from the chief of naval operations." },
             { "text": "Authorized final release and copy-edited articles on Navy.mil for 300 writers, reviewing more than 140 submissions weekly." },
             { "text": "Produced more than 70 stories of U.S. Navy sailors through photography, video, and feature writing for online channels, including magazines and social media, achieving around 30,000 views on YouTube." }
@@ -107,17 +99,34 @@
       "title": "Regional Emmy nomination",
       "short": "“Boot Camp: Making a Sailor” (2018), Documentary, Cultural/Topical",
       "text": "Shot video for “Boot Camp: Making a Sailor” (2018), nominated for a regional Emmy in the Documentary, Cultural/Topical category (National Capital Chesapeake Bay chapter).",
-      "links": [{ "label": "Watch", "href": "https://www.dvidshub.net/video/694641/boot-camp-making-sailor-full-documentary" }]
+      "links": [
+        {
+          "label": "Watch",
+          "href": "https://www.dvidshub.net/video/694641/boot-camp-making-sailor-full-documentary"
+        }
+      ]
     },
     {
       "title": "Russell Egnor Navy Media Awards ×9",
       "short": "Individual, including Outstanding New Graphic Artist (2014) and first place, Graphic Design Publication (2015)",
       "text": "Individual (nine): Outstanding New Graphic Artist (2014, earned early advancement to E-4); first place, Graphic Design Publication (2015); second place, Video Series (2017) and Training Videography (2018); plus five third-place and honorable mention finishes in design, animation, photography, and video.",
       "links": [
-        { "label": "2014", "href": "https://www.mynavyhr.navy.mil/Portals/55/Messages/NAVADMIN/NAV2015/NAV15163.txt" },
-        { "label": "2015", "href": "https://www.mynavyhr.navy.mil/Portals/55/Messages/NAVADMIN/NAV2016/NAV16115.txt" },
-        { "label": "2017", "href": "https://www.mynavyhr.navy.mil/Portals/55/Messages/NAVADMIN/NAV2018/NAV18117.txt" },
-        { "label": "2018", "href": "https://www.dvidshub.net/awards/dma/2018?branch=navy" }
+        {
+          "label": "2014",
+          "href": "https://www.mynavyhr.navy.mil/Portals/55/Messages/NAVADMIN/NAV2015/NAV15163.txt"
+        },
+        {
+          "label": "2015",
+          "href": "https://www.mynavyhr.navy.mil/Portals/55/Messages/NAVADMIN/NAV2016/NAV16115.txt"
+        },
+        {
+          "label": "2017",
+          "href": "https://www.mynavyhr.navy.mil/Portals/55/Messages/NAVADMIN/NAV2018/NAV18117.txt"
+        },
+        {
+          "label": "2018",
+          "href": "https://www.dvidshub.net/awards/dma/2018?branch=navy"
+        }
       ]
     },
     {
@@ -125,10 +134,22 @@
       "short": "Unit, including the Navy Media Excellence Award for best overall media production (2014, 2017)",
       "text": "Unit (eight): Navy Media Excellence Award for best overall media production at USS John C. Stennis (2014) and Defense Media Activity (2017); Stennis also earned first place for The Statesman newspaper and “Studio 74” long-form video (2016), second place for Website (2015), third place for Cruisebook (2016), and two honorable mentions (2014).",
       "links": [
-        { "label": "2014", "href": "https://www.mynavyhr.navy.mil/Portals/55/Messages/NAVADMIN/NAV2015/NAV15163.txt" },
-        { "label": "2015", "href": "https://www.mynavyhr.navy.mil/Portals/55/Messages/NAVADMIN/NAV2016/NAV16115.txt" },
-        { "label": "2016", "href": "https://www.mynavyhr.navy.mil/Portals/55/Messages/NAVADMIN/NAV2017/NAV17086.txt" },
-        { "label": "2017", "href": "https://www.mynavyhr.navy.mil/Portals/55/Messages/NAVADMIN/NAV2018/NAV18117.txt" }
+        {
+          "label": "2014",
+          "href": "https://www.mynavyhr.navy.mil/Portals/55/Messages/NAVADMIN/NAV2015/NAV15163.txt"
+        },
+        {
+          "label": "2015",
+          "href": "https://www.mynavyhr.navy.mil/Portals/55/Messages/NAVADMIN/NAV2016/NAV16115.txt"
+        },
+        {
+          "label": "2016",
+          "href": "https://www.mynavyhr.navy.mil/Portals/55/Messages/NAVADMIN/NAV2017/NAV17086.txt"
+        },
+        {
+          "label": "2017",
+          "href": "https://www.mynavyhr.navy.mil/Portals/55/Messages/NAVADMIN/NAV2018/NAV18117.txt"
+        }
       ]
     },
     {
@@ -136,8 +157,14 @@
       "short": "Navy public affairs excellence, USS John C. Stennis (2015, 2016)",
       "text": "Thompson-Ravitz Awards for Excellence in Navy Public Affairs, USS John C. Stennis (three): Community Outreach for the Distinguished Visitor Embark Program (2015, 2016); Internal Communication (2015).",
       "links": [
-        { "label": "2015", "href": "https://www.mynavyhr.navy.mil/Portals/55/Messages/NAVADMIN/NAV2016/NAV16115.txt" },
-        { "label": "2016", "href": "https://www.mynavyhr.navy.mil/Portals/55/Messages/NAVADMIN/NAV2017/NAV17086.txt" }
+        {
+          "label": "2015",
+          "href": "https://www.mynavyhr.navy.mil/Portals/55/Messages/NAVADMIN/NAV2016/NAV16115.txt"
+        },
+        {
+          "label": "2016",
+          "href": "https://www.mynavyhr.navy.mil/Portals/55/Messages/NAVADMIN/NAV2017/NAV17086.txt"
+        }
       ]
     },
     {
@@ -151,7 +178,18 @@
     {
       "group": "Software",
       "items": [
-        { "name": "Adobe Creative Cloud", "sub": ["Illustrator", "InDesign", "Photoshop", "After Effects", "Premiere", "Audition", "Lightroom"] },
+        {
+          "name": "Adobe Creative Cloud",
+          "sub": [
+            "Illustrator",
+            "InDesign",
+            "Photoshop",
+            "After Effects",
+            "Premiere",
+            "Audition",
+            "Lightroom"
+          ]
+        },
         "Procreate",
         "Figma",
         "Webflow",
@@ -162,25 +200,64 @@
         "HTML",
         "CSS",
         "JavaScript",
-        { "name": "AI coding tools", "sub": ["Claude Code"] }
+        {
+          "name": "AI coding tools",
+          "sub": [
+            "Claude Code",
+            "Ollama"
+          ]
+        }
       ]
     },
     {
       "group": "UX/UI",
-      "items": ["User research", "Usability testing", "Wireframing", "Prototyping", "Iconography", "Material Design", "Apple HIG"]
+      "items": [
+        "User research",
+        "Usability testing",
+        "Wireframing",
+        "Prototyping",
+        "Iconography",
+        "Material Design",
+        "Apple HIG"
+      ]
     },
     {
       "group": "Design systems",
-      "items": ["Component libraries", "Style guides", { "name": "Accessibility", "sub": ["WCAG", "APCA"] }, "Responsive layout"]
+      "items": [
+        "Component libraries",
+        "Style guides",
+        {
+          "name": "Accessibility",
+          "sub": [
+            "WCAG",
+            "APCA"
+          ]
+        },
+        "Responsive layout"
+      ]
     },
     {
       "group": "Graphic design",
-      "items": ["Branding and logo design", "Creative direction", "Illustration", "Typography", "Digital and print layout", "Presentation templates"]
+      "items": [
+        "Branding and logo design",
+        "Creative direction",
+        "Illustration",
+        "Typography",
+        "Digital and print layout",
+        "Presentation templates"
+      ]
     },
     {
       "group": "Photo and video",
       "items": [
-        { "name": "Mirrorless", "sub": ["Panasonic", "Canon", "Nikon"] },
+        {
+          "name": "Mirrorless",
+          "sub": [
+            "Panasonic",
+            "Canon",
+            "Nikon"
+          ]
+        },
         "ENG camera systems",
         "Gimbal",
         "Live event camera operation",
@@ -189,19 +266,36 @@
     },
     {
       "group": "Writing",
-      "items": ["AP style", "Copy editing", "Feature writing", "Press releases", "Speech writing"]
+      "items": [
+        "AP style",
+        "Copy editing",
+        "Feature writing",
+        "Press releases",
+        "Speech writing"
+      ]
     },
     {
       "group": "Public speaking",
-      "items": ["On-camera talent", "Interview preparation", "Media handling"]
+      "items": [
+        "On-camera talent",
+        "Interview preparation",
+        "Media handling"
+      ]
     },
     {
       "group": "Security clearance",
-      "items": ["Secret (current)"]
+      "items": [
+        "Secret (current)"
+      ]
     },
     {
       "group": "Interests",
-      "items": ["Woodworking", "Piano", "Cooking", "Electronics"]
+      "items": [
+        "Woodworking",
+        "Piano",
+        "Cooking",
+        "Electronics"
+      ]
     }
   ],
   "education": [

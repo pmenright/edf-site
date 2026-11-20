@@ -1,6 +1,16 @@
-import { animate, motion, useMotionValue, useMotionValueEvent, useReducedMotion, useScroll } from 'motion/react'
+import {
+  animate,
+  motion,
+  useMotionValue,
+  useMotionValueEvent,
+  useReducedMotion,
+  useScroll,
+  type AnimationPlaybackControls,
+} from 'motion/react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FocusEvent, type MouseEvent } from 'react'
-import { byCategory, withBase, type Category, type Project } from '../content'
+import { AboutDesktopLayer, ABOUT_SLIDE_DURATION, type AboutSlide } from '../about/AboutLayer'
+import { byCategory, type Category, type Project } from '../content'
+import type { AboutState } from '../hooks/useAboutHash'
 import { Hero } from './Hero'
 import { RAIL_EASE, RAIL_EXPAND_DURATION, RAIL_NARROW, RAIL_TRIGGER_SLACK } from '../lib/rail'
 import { NavColumn } from './Nav'
@@ -14,6 +24,12 @@ interface GalleryProps {
   startAtWork?: boolean
   /** Open scrolled to this project's panel (links like "/?panel=nsyte"). */
   startAtPanel?: string
+  /** The about / resume panel (App.tsx, useAboutHash). */
+  about: AboutState
+  /** RESUME pressed: open the panel on this slide. */
+  onAbout: (s: AboutSlide) => void
+  onAboutSlide: (s: AboutSlide) => void
+  onCloseAbout: () => void
 }
 
 interface Dims {
@@ -25,6 +41,8 @@ interface Dims {
   navLeft: number
   /** Full nav column width; the docked rail is RAIL_NARROW of it */
   navW: number
+  /** Visible page width */
+  vw: number
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v))
@@ -46,7 +64,17 @@ const viewWidth = () => document.documentElement.clientWidth
  * under it, and when that panel reaches the docked rail's edge the column collapses to the slim rail
  * (see .rail in index.css). Panels then slide under the rail.
  */
-export function DesktopGallery({ category, onCategory, onOpen, startAtWork, startAtPanel }: GalleryProps) {
+export function DesktopGallery({
+  category,
+  onCategory,
+  onOpen,
+  startAtWork,
+  startAtPanel,
+  about,
+  onAbout,
+  onAboutSlide,
+  onCloseAbout,
+}: GalleryProps) {
   const frame = useRef<HTMLDivElement>(null)
   const slot = useRef<HTMLDivElement>(null)
   // Each side's row of panels. The strip is as long as the side that's showing, so DESIGN and VIDEO
@@ -57,12 +85,24 @@ export function DesktopGallery({ category, onCategory, onOpen, startAtWork, star
   const setRail = useCallback((el: HTMLElement | null) => {
     rail.current = el
   }, [])
-  const [dims, setDims] = useState<Dims>({ travel: 0, height: 0, navLeft: 0, navW: 0 })
+  const [dims, setDims] = useState<Dims>({ travel: 0, height: 0, navLeft: 0, navW: 0, vw: 0 })
   const { scrollY } = useScroll()
   const x = useMotionValue(0)
   const pin = useMotionValue(0)
   const squeeze = useMotionValue(0)
   const reduce = useReducedMotion()
+
+  /*
+    The about / resume panel slides in over the work, right of the docked rail (AboutLayer.tsx). It
+    lives in the strip, under the rail, so the rail still opens over it on hover; `aboutPin` holds it
+    against the docked rail wherever the strip is. While it's open the page scroll is held still
+    (`lockAt`, a strip position), so the work under it stays put and is where it was when it closes.
+  */
+  const aboutPin = useMotionValue(0)
+  const aboutOpen = useRef(about.open)
+  const lockAt = useRef<number | null>(null)
+  /** The strip is gliding to the docked rail as the panel opens (the page scroll already jumped). */
+  const gliding = useRef<AnimationPlaybackControls | null>(null)
 
   // Docked or not. The rail collapses on a trigger rather than following the scroll: it stays full
   // width while the first panel slides under it, and when the panel reaches the spot where the docked
@@ -73,6 +113,7 @@ export function DesktopGallery({ category, onCategory, onOpen, startAtWork, star
   /** Put the strip at `offset` pixels along (and pin / dock the rail to match). */
   const place = useCallback((offset: number) => {
     x.set(-offset)
+    aboutPin.set(offset - dims.navLeft - dims.navW * (1 - RAIL_NARROW))
     // Past the nav column's own position: hold it at the left edge.
     const past = offset - dims.navLeft
     pin.set(Math.max(0, past))
@@ -84,9 +125,10 @@ export function DesktopGallery({ category, onCategory, onOpen, startAtWork, star
     docked.current = want
     if (first) squeeze.set(want ? 1 : 0)
     else animate(squeeze, want ? 1 : 0, { duration: reduce ? 0 : RAIL_EXPAND_DURATION, ease: RAIL_EASE })
-  }, [dims, x, pin, squeeze, reduce])
+  }, [dims, x, pin, squeeze, reduce, aboutPin])
 
   const update = useCallback(() => {
+    if (gliding.current) return
     const range = dims.height - window.innerHeight
     const progress = range > 0 ? Math.min(1, Math.max(0, scrollY.get() / range)) : 0
     place(progress * dims.travel)
@@ -164,6 +206,7 @@ export function DesktopGallery({ category, onCategory, onOpen, startAtWork, star
 
   const onFocusCapture = (e: FocusEvent<HTMLDivElement>) => {
     const el = e.target as HTMLElement
+    if (el.closest('[data-about-layer]')) return // the panel brings its own slides in
     let keyboard = true
     try {
       keyboard = el.matches(':focus-visible')
@@ -181,7 +224,7 @@ export function DesktopGallery({ category, onCategory, onOpen, startAtWork, star
     const viewerOpen = () => document.documentElement.classList.contains('viewer-open')
 
     const onWheel = (e: WheelEvent) => {
-      if (viewerOpen() || e.ctrlKey) return // ctrlKey = pinch-zoom on trackpads
+      if (viewerOpen() || e.ctrlKey || aboutOpen.current) return // ctrlKey = pinch-zoom on trackpads
       if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return // mostly vertical: native scroll handles it
       e.preventDefault()
       const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? viewWidth() : 1
@@ -192,7 +235,7 @@ export function DesktopGallery({ category, onCategory, onOpen, startAtWork, star
     // (lined up against the docked rail), then the end of the strip.
     let pending: { offset: number; at: number } | null = null
     const onKey = (e: KeyboardEvent) => {
-      if (viewerOpen() || e.altKey || e.metaKey || e.ctrlKey || e.shiftKey) return
+      if (viewerOpen() || e.altKey || e.metaKey || e.ctrlKey || e.shiftKey || aboutOpen.current) return
       if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return
       const el = e.target as HTMLElement
       if (el.closest('input, textarea, select, [contenteditable="true"]')) return
@@ -218,6 +261,12 @@ export function DesktopGallery({ category, onCategory, onOpen, startAtWork, star
     // put it back, or the pinned rail would slide part-way off the left edge.
     const onScroll = () => {
       if (window.scrollX !== 0) window.scrollTo({ left: 0, behavior: 'instant' })
+      // The about / resume panel is open: the page under it doesn't scroll (keys like Home or End,
+      // or dragging the scrollbar, would otherwise move the work underneath).
+      if (aboutOpen.current && lockAt.current !== null && !gliding.current) {
+        const top = lockAt.current * ratio()
+        if (Math.abs(window.scrollY - top) > 1) window.scrollTo({ top, behavior: 'instant' })
+      }
     }
 
     window.addEventListener('wheel', onWheel, { passive: false })
@@ -239,7 +288,7 @@ export function DesktopGallery({ category, onCategory, onOpen, startAtWork, star
     const navW = slot.current.offsetWidth
     // hero + nav column + this side's panels (the other side's row may be longer or shorter)
     const travel = Math.max(0, navLeft + navW + row.offsetWidth - vw)
-    return { travel, height: Math.max(travel - vw, window.innerHeight * 2), navLeft, navW }
+    return { travel, height: Math.max(travel - vw, window.innerHeight * 2), navLeft, navW, vw }
   }, [])
 
   useLayoutEffect(() => {
@@ -248,6 +297,10 @@ export function DesktopGallery({ category, onCategory, onOpen, startAtWork, star
       if (next) {
         dimsRef.current = next
         setDims(next)
+        // Resized with the about / resume panel open: keep the work under it where it was.
+        if (aboutOpen.current && lockAt.current !== null && !gliding.current) {
+          window.scrollTo({ top: lockAt.current * ratio(), behavior: 'instant' })
+        }
       }
     }
     measure()
@@ -259,7 +312,54 @@ export function DesktopGallery({ category, onCategory, onOpen, startAtWork, star
       ro.disconnect()
       window.removeEventListener('resize', measure)
     }
-  }, [measureFor])
+  }, [measureFor, ratio])
+
+  /** Strip position where the rail has just docked: the panel opens against the docked rail. */
+  const dockAt = useCallback(() => {
+    const { navLeft, navW, travel } = dimsRef.current
+    return Math.min(travel, navLeft + navW * (1 - RAIL_NARROW) + RAIL_TRIGGER_SLACK)
+  }, [])
+
+  /*
+    Opening the panel. If the rail is already docked (somewhere in the work), nothing under it moves:
+    the panel slides in from the right and the work waits underneath, where it was. If it isn't (the
+    nav column is still on its way in from the hero), the strip glides on to where the rail docks while
+    the panel slides in, so the rail ends up docked at the left edge with the panel beside it.
+    Closing lets the page scroll again. Runs before the DESIGN / VIDEO switch below, so a switch made
+    from the panel (it closes it) starts from a free page.
+  */
+  const wasAboutOpen = useRef(about.open)
+  useLayoutEffect(() => {
+    const opening = about.open && !wasAboutOpen.current
+    const closing = !about.open && wasAboutOpen.current
+    wasAboutOpen.current = about.open
+    aboutOpen.current = about.open
+    if (closing) {
+      lockAt.current = null
+      gliding.current?.stop()
+      gliding.current = null
+      return
+    }
+    if (!opening || dimsRef.current.travel <= 0) return
+    const offset = -x.get()
+    const dock = dockAt()
+    if (offset >= dock - RAIL_TRIGGER_SLACK) {
+      lockAt.current = offset
+      return
+    }
+    lockAt.current = dock
+    window.scrollTo({ top: dock * ratio(), behavior: 'instant' })
+    const glide = animate(offset, dock, {
+      duration: reduce ? 0 : ABOUT_SLIDE_DURATION + 0.1,
+      ease: [0.65, 0, 0.35, 1],
+      onUpdate: place,
+    })
+    gliding.current = glide
+    void glide.then(() => {
+      if (gliding.current === glide) gliding.current = null
+    })
+  }, [about.open, dockAt, place, ratio, reduce, x])
+  useEffect(() => () => gliding.current?.stop(), [])
 
   /*
     Switching DESIGN / VIDEO starts the new side at its beginning: the full nav column at the left
@@ -313,15 +413,42 @@ export function DesktopGallery({ category, onCategory, onOpen, startAtWork, star
   /** Scroll hint: glide to where the nav column reaches the left edge. */
   const scrollToWork = () => goTo(dims.navLeft, true)
 
-  // Links like "/#video" land on the work, not the hero, and "/?panel=nsyte" lands on that project
-  // (once, as soon as the strip is measured).
+  // Links like "/#video" land on the work, not the hero, "/?panel=nsyte" lands on that project, and
+  // "/#about" opens with the rail docked beside the about / resume panel (once, as soon as the strip
+  // is measured).
   const landed = useRef(false)
   useEffect(() => {
-    if (landed.current || dims.travel <= 0 || !(startAtWork || startAtPanel)) return
+    if (landed.current || dims.travel <= 0 || !(startAtWork || startAtPanel || aboutOpen.current)) return
     landed.current = true
+    if (aboutOpen.current) {
+      lockAt.current = dockAt()
+      goTo(lockAt.current, false)
+      return
+    }
     const panel = startAtPanel && frame.current?.querySelector(`.panel[data-project="${CSS.escape(startAtPanel)}"]`)
     goTo(panel ? panelOffset(panel) : dims.navLeft, false)
-  }, [startAtWork, startAtPanel, dims, goTo, panelOffset])
+  }, [startAtWork, startAtPanel, dims, goTo, panelOffset, dockAt])
+
+  /** Logo: back to the hero (closing the about / resume panel first, if it's open). */
+  const goHome = () => {
+    if (aboutOpen.current) {
+      aboutOpen.current = false
+      lockAt.current = null
+      onCloseAbout()
+    }
+    goTo(0, true)
+  }
+
+  /** RESUME: open the panel on About (or, if it's open on the resume, go back to About). */
+  const openAbout = () => onAbout(0)
+
+  // A switch made from the about / resume panel (DESIGN or VIDEO closes it) happens out of sight,
+  // under the panel as it slides away, so the rows swap without their own slide. (Read during render:
+  // the layout effect above hasn't recorded this render's state yet, so it still says "was open".)
+  const underPanel = wasAboutOpen.current || about.open
+
+  const railW = dims.navW * RAIL_NARROW
+  const slideW = Math.max(0, Math.round(dims.vw - railW))
 
   /** Skip link: straight to the first project of the current category. */
   const skipToWork = (e: MouseEvent<HTMLAnchorElement>) => {
@@ -350,7 +477,7 @@ export function DesktopGallery({ category, onCategory, onOpen, startAtWork, star
           onFocusCapture={onFocusCapture}
           className="flex h-full w-max will-change-transform"
         >
-          <Hero onScrollHint={scrollToWork} className="h-screen w-[100cqw]" />
+          <Hero onScrollHint={scrollToWork} inert={about.open} className="h-screen w-[100cqw]" />
           <NavColumn
             category={category}
             onCategory={onCategory}
@@ -358,14 +485,17 @@ export function DesktopGallery({ category, onCategory, onOpen, startAtWork, star
             squeeze={squeeze}
             slotRef={slot}
             onRail={setRail}
-            onHome={() => goTo(0, true)}
-            resumeHref={withBase('/about/')}
+            onHome={goHome}
+            onResume={openAbout}
+            resumeActive={about.open}
+            categoryActive={!about.open}
           />
-          <div className="h-screen flex-none overflow-visible">
+          <div className="relative h-screen flex-none overflow-visible">
             <motion.div
               initial={false}
               animate={{ y: category === 'video' ? '-100vh' : '0vh' }}
-              transition={{ duration: reduce ? 0 : 0.25, ease: 'easeInOut' }}
+              transition={{ duration: reduce || underPanel ? 0 : 0.25, ease: 'easeInOut' }}
+              inert={about.open}
               className="flex flex-col items-start"
             >
               {(['design', 'video'] as const).map((cat) => (
@@ -392,6 +522,14 @@ export function DesktopGallery({ category, onCategory, onOpen, startAtWork, star
                 </motion.section>
               ))}
             </motion.div>
+            <AboutDesktopLayer
+              open={about.open}
+              slide={about.slide}
+              seq={about.seq}
+              pin={aboutPin}
+              slideW={slideW}
+              onSlide={onAboutSlide}
+            />
           </div>
         </motion.div>
       </div>

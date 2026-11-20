@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, type ReactNode } from 'react'
+import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { site, withBase } from '../content'
 import { AwardIcon } from './AwardIcon'
 import { resume, type Honor, type Job, type SkillItem } from './content'
@@ -7,11 +7,10 @@ const pdf = withBase(site.resumeFile)
 const pdfName = site.resumeFile.split('/').pop()
 
 /**
- * Desktop: the resume laid out on one screen like tools knolled on a bench. Each section is a sand
- * card on the ink "table", squared up with even gaps and crop marks at its corners. Column widths
- * run on the golden ratio (1.618 : 1 : 1), and the cards are placed by importance: the summary
- * first (top left, small), work experience the largest, then honors, skills, and education last.
- * The board shows the key lines of each job; the PDF has everything.
+ * Desktop: the resume as one sand sheet on the ink page (Jim's mockup), split into sections by ink
+ * rules: summary and work experience on the left, honors, skills and education on the right. Work
+ * experience has a tab per job, freelance first (its tab is ink, to mark it as the current job).
+ * Everything on the PDF is here. Colors come only from Jim's palette (index.css, --color-pal-*).
  */
 export function ResumeBoard() {
   const board = useFitText()
@@ -19,26 +18,26 @@ export function ResumeBoard() {
     <div ref={board} className="resume-board">
       <header className="resume-board-head">
         <h2 className="font-ddc text-[1.9em] leading-none tracking-[0.04em] uppercase">Resume</h2>
-        <p className="min-w-0 truncate font-ddc text-[1.05em] tracking-[0.06em] uppercase opacity-80">
+        <p className="min-w-0 truncate font-ddc text-[1.05em] tracking-[0.06em] text-pal-khaki uppercase">
           {resume.name} <span aria-hidden="true">·</span> {resume.title} <span aria-hidden="true">·</span> {resume.tagline}
         </p>
         <PdfButton />
       </header>
-      <div className="resume-grid">
-        <Card area="sum" n={1} title="Summary">
+      <div className="resume-sheet">
+        <Card area="sum" title="Summary">
           <p className="resume-summary">{resume.summary}</p>
         </Card>
-        <Card area="work" n={2} title="Work experience">
-          <WorkList keyOnly />
+        <Card area="work" title="Work experience">
+          <WorkTabs />
         </Card>
-        <Card area="hon" n={3} title="Honors & awards">
-          <HonorList compact />
+        <Card area="hon" title="Honors & awards">
+          <HonorList />
         </Card>
-        <Card area="skl" n={4} title="Skills & interests">
+        <Card area="skl" title="Skills & interests">
           <SkillList />
         </Card>
-        <Card area="edu" n={5} title="Education">
-          <EducationList compact />
+        <Card area="edu" title="Education">
+          <EducationList />
         </Card>
       </div>
     </div>
@@ -49,14 +48,14 @@ export function ResumeBoard() {
 const FIT_MIN = 11
 const FIT_MAX = 17
 /** Text size when the board can't fit one screen and scrolls instead. */
-const FLOW_SIZE = 13
+const FLOW_SIZE = 12
 
 /**
  * Sizes the board's text to the screen: the largest size (between FIT_MIN and FIT_MAX px, and no more
- * than 1.6% of the screen height) at which every card's contents fit without scrolling. Everything on
- * the board is in ems, so the whole layout scales together. Rechecked when the window resizes.
- * On screens too short for that (small laptops), the board switches to flowing (data-flow): same
- * cards, at FLOW_SIZE, as tall as they need, and the resume slide scrolls down.
+ * than 1.6% of the screen height) at which every section's contents fit without scrolling. Everything
+ * on the board is in ems, so the whole layout scales together. Rechecked when the window resizes.
+ * On screens too short for that (most laptops, now that the board has everything), it flows
+ * (data-flow): same layout at FLOW_SIZE, as tall as it needs, and the resume slide scrolls down.
  */
 function useFitText() {
   const ref = useRef<HTMLDivElement>(null)
@@ -104,33 +103,44 @@ function useFitText() {
 
 /**
  * Phones and tablets: the whole resume as one column, in the same order as the PDF (every line of
- * every job), on the same sand paper as the desktop cards.
+ * every job), on sand. The current job (freelance) gets the same ink tab as on desktop.
  */
 export function ResumeDocument() {
   return (
     <div className="resume-doc">
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-b-[3px] border-ink pb-4">
+      <header className="mb-7 flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-b-[3px] border-ink pb-4">
         <div>
           <h2 className="font-ddc text-[2em] leading-none tracking-[0.03em] uppercase">{resume.name}</h2>
-          <p className="mt-1.5 font-ddc text-[0.95em] tracking-[0.06em] uppercase opacity-80">
+          <p className="mt-1.5 font-ddc text-[0.95em] tracking-[0.06em] text-pal-char uppercase">
             {resume.title} <span aria-hidden="true">·</span> {resume.tagline}
           </p>
         </div>
         <PdfButton />
       </header>
-      <DocSection n={1} title="Summary">
+      <DocSection title="Summary">
         <p className="resume-summary">{resume.summary}</p>
       </DocSection>
-      <DocSection n={2} title="Work experience">
-        <WorkList />
+      <DocSection title="Work experience">
+        <div className="resume-jobs">
+          {resume.work.map((job) => (
+            <div key={job.org}>
+              {job.current && (
+                <p className="resume-job-flag">
+                  <span>{job.tab}</span>
+                </p>
+              )}
+              <JobEntry job={job} />
+            </div>
+          ))}
+        </div>
       </DocSection>
-      <DocSection n={3} title="Honors & awards">
+      <DocSection title="Honors & awards">
         <HonorList />
       </DocSection>
-      <DocSection n={4} title="Skills & interests">
+      <DocSection title="Skills & interests">
         <SkillList />
       </DocSection>
-      <DocSection n={5} title="Education">
+      <DocSection title="Education">
         <EducationList />
       </DocSection>
     </div>
@@ -148,14 +158,11 @@ function PdfButton() {
   )
 }
 
-const num = (n: number) => String(n).padStart(2, '0')
-
-function Card({ area, n, title, children }: { area: string; n: number; title: string; children: ReactNode }) {
+function Card({ area, title, children }: { area: string; title: string; children: ReactNode }) {
   const id = `resume-${area}`
   return (
     <section className="resume-card" style={{ gridArea: area }} aria-labelledby={id}>
       <h3 id={id} className="resume-card-head">
-        <span className="resume-num">{num(n)}</span>
         {title}
       </h3>
       <div className="resume-card-body">{children}</div>
@@ -163,55 +170,106 @@ function Card({ area, n, title, children }: { area: string; n: number; title: st
   )
 }
 
-function DocSection({ n, title, children }: { n: number; title: string; children: ReactNode }) {
+function DocSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="mt-8 first-of-type:mt-0">
-      <h3 className="resume-card-head">
-        <span className="resume-num">{num(n)}</span>
-        {title}
-      </h3>
-      <div className="mt-3">{children}</div>
+    <section className="mt-10 first-of-type:mt-0">
+      <h3 className="resume-card-head">{title}</h3>
+      <div>{children}</div>
     </section>
   )
 }
 
-/** Jobs, newest first. The current one (freelance) is set in reverse, ink on sand, with a NOW tag. */
-function WorkList({ keyOnly = false }: { keyOnly?: boolean }) {
+/**
+ * Work experience on the board: a tab per job, freelance first. Freelance's tab is ink (the current
+ * job). The open tab sits down on the rule over the job, joined to it like a folder tab; the others
+ * float just above it. Every job's panel stays in the layout (only the open one shows), so the
+ * section is always as tall as the longest job and nothing jumps when switching.
+ * Keyboard: arrow keys (and Home / End) move between tabs.
+ */
+function WorkTabs() {
+  const [open, setOpen] = useState(0)
+  const id = useId()
+  const tabs = useRef<(HTMLButtonElement | null)[]>([])
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const last = resume.work.length - 1
+    const to =
+      e.key === 'ArrowRight' ? (open === last ? 0 : open + 1)
+      : e.key === 'ArrowLeft' ? (open === 0 ? last : open - 1)
+      : e.key === 'Home' ? 0
+      : e.key === 'End' ? last
+      : null
+    if (to === null) return
+    e.preventDefault()
+    e.stopPropagation() // not a page turn (AboutLayer listens for arrow keys)
+    setOpen(to)
+    tabs.current[to]?.focus()
+  }
   return (
-    <div className="resume-jobs">
-      {resume.work.map((job) => (
-        <JobEntry key={job.org} job={job} keyOnly={keyOnly} />
-      ))}
+    <div className="job-tabs-box">
+      <div role="tablist" aria-label="Jobs" className="job-tabs" onKeyDown={onKeyDown}>
+        {resume.work.map((job, i) => (
+          <button
+            key={job.org}
+            ref={(el) => {
+              tabs.current[i] = el
+            }}
+            type="button"
+            role="tab"
+            id={`${id}-tab-${i}`}
+            aria-selected={open === i}
+            aria-controls={`${id}-panel-${i}`}
+            tabIndex={open === i ? 0 : -1}
+            data-current={job.current || undefined}
+            onClick={() => setOpen(i)}
+            className="job-tab"
+          >
+            <span className="job-tab-name">{job.tab}</span>
+            <span className="job-tab-years">{job.years}</span>
+          </button>
+        ))}
+      </div>
+      <div className="job-panels">
+        {resume.work.map((job, i) => (
+          <div
+            key={job.org}
+            role="tabpanel"
+            id={`${id}-panel-${i}`}
+            aria-labelledby={`${id}-tab-${i}`}
+            data-open={open === i || undefined}
+            inert={open !== i}
+            className="job-panel"
+          >
+            <JobEntry job={job} />
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
 
-function JobEntry({ job, keyOnly }: { job: Job; keyOnly: boolean }) {
-  const pick = (b: { key?: boolean }) => !keyOnly || b.key
-  const units = (job.units ?? []).map((u) => ({ ...u, bullets: u.bullets.filter(pick) }))
+function JobEntry({ job }: { job: Job }) {
   return (
-    <article className="resume-job" data-current={job.current || undefined}>
+    <article className="resume-job">
       <header className="resume-job-head">
         <div className="min-w-0">
           <h4 className="resume-job-org">
             {job.org}
             {job.kind && <span className="resume-job-kind">{job.kind}</span>}
-            {job.current && <span className="resume-now">Now</span>}
           </h4>
           <p className="resume-job-title">
             {job.title}
-            {job.location && <span className="opacity-75">, {job.location}</span>}
+            {job.location && <span className="resume-quiet">, {job.location}</span>}
           </p>
         </div>
         <p className="resume-dates">{job.dates}</p>
       </header>
-      <Bullets items={job.bullets.filter(pick)} />
-      {units.map((u) => (
+      <Bullets items={job.bullets} />
+      {(job.units ?? []).map((u) => (
         <div key={u.org} className="resume-unit">
           <p className="resume-unit-head">
             <span>
               <strong className="font-semibold">{u.org}</strong>
-              {u.location && <span className="opacity-75">, {u.location}</span>}
+              {u.location && <span className="resume-quiet">, {u.location}</span>}
             </span>
             <span className="resume-dates">{u.dates}</span>
           </p>
@@ -233,24 +291,24 @@ function Bullets({ items }: { items: { text: string }[] }) {
   )
 }
 
-/** Each award with its (placeholder) icon and links to the public record. */
-function HonorList({ compact = false }: { compact?: boolean }) {
+/** Each award with Jim's award icon and links to the public record. */
+function HonorList() {
   return (
     <ul className="resume-honors">
       {resume.honors.map((h) => (
-        <HonorEntry key={h.title} honor={h} compact={compact} />
+        <HonorEntry key={h.title} honor={h} />
       ))}
     </ul>
   )
 }
 
-function HonorEntry({ honor, compact }: { honor: Honor; compact: boolean }) {
+function HonorEntry({ honor }: { honor: Honor }) {
   return (
     <li className="resume-honor">
       <AwardIcon className="resume-honor-icon" />
       <div className="min-w-0">
         <p className="resume-honor-title">{honor.title}</p>
-        <p className="resume-honor-text">{compact ? honor.short : honor.text}</p>
+        <p className="resume-honor-text">{honor.text}</p>
         {honor.links.length > 0 && (
           <p className="resume-records">
             {honor.links.map((l) => (
@@ -309,20 +367,19 @@ function Pill({ item }: { item: SkillItem }) {
   )
 }
 
-/** Schools. On the board (compact) each one is two lines: the school, then what and when. */
-function EducationList({ compact = false }: { compact?: boolean }) {
+/** Schools: name, any note (former name, location), what, when, and any honor. */
+function EducationList() {
   return (
     <ul className="resume-schools">
       {resume.education.map((s) => (
         <li key={s.school} className="resume-school">
           <p className="resume-school-name">{s.school}</p>
-          {s.note && !compact && <p className="text-[0.85em] opacity-70">{s.note}</p>}
-          <p>
+          {s.note && <p className="resume-quiet text-[0.88em]">{s.note}</p>}
+          <p className="mt-0.5">
             {s.credential}
-            {compact && <span className="resume-dates">, {s.dates}</span>}
+            <span className="resume-dates">, {s.dates}</span>
           </p>
-          {!compact && <p className="resume-dates">{s.dates}</p>}
-          {s.honor && <p className="mt-0.5 text-[0.9em] italic">{s.honor}</p>}
+          {s.honor && <p className="mt-0.5 italic">{s.honor}</p>}
         </li>
       ))}
     </ul>

@@ -4,12 +4,15 @@ interface HeroProps {
   /** Desktop only: scroll hint at the right edge. */
   onScrollHint?: () => void
   className?: string
+  /** Out of reach (the about / resume panel covers it). */
+  inert?: boolean
 }
 
 /** Full-screen lockup: "Enright Design Foundry, Hand Made, Austin Based, Veteran Owned". */
-export function Hero({ onScrollHint, className = '' }: HeroProps) {
+export function Hero({ onScrollHint, className = '', inert = false }: HeroProps) {
   return (
     <section
+      inert={inert}
       className={`relative flex flex-none items-center justify-center px-[5%] pt-12 pb-5 short:pt-10 short:pb-3 strip:p-0 ${className}`}
     >
       <h1 className="sr-only">Enright Design Foundry: graphic design and videography. Austin based, veteran owned.</h1>

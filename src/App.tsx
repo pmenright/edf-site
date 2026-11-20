@@ -6,6 +6,7 @@ import { ContactDialog } from './components/ContactDialog'
 import { ProjectViewer } from './components/ProjectViewer'
 import { projects, type Category, type Project } from './content'
 import { useIsDesktop } from './hooks/useMediaQuery'
+import { useAboutHash } from './hooks/useAboutHash'
 import { useViewerHash } from './hooks/useViewerHash'
 import { closeContact, useContactOpen } from './lib/contact'
 import { preload } from './lib/preload'
@@ -26,6 +27,7 @@ export default function App() {
   const isDesktop = useIsDesktop()
   const contactOpen = useContactOpen()
   const { open, openProject, closeProject } = useViewerHash()
+  const { about, openAbout, closeAbout, setAboutSlide } = useAboutHash()
   const [startPanel] = useState(() => (open ? undefined : panelFromQuery()))
   const [category, setCategory] = useState<Category>(
     () => open?.category ?? startPanel?.category ?? categoryFromHash() ?? 'design',
@@ -55,6 +57,15 @@ export default function App() {
     [openProject],
   )
 
+  // DESIGN / VIDEO: also closes the about / resume panel if it's open.
+  const showCategory = useCallback(
+    (c: Category) => {
+      closeAbout()
+      setCategory(c)
+    },
+    [closeAbout],
+  )
+
   const Gallery = isDesktop ? DesktopGallery : MobileGallery
 
   return (
@@ -62,8 +73,12 @@ export default function App() {
       <Preloader />
       <Gallery
         category={category}
-        onCategory={setCategory}
+        onCategory={showCategory}
         onOpen={handleOpen}
+        about={about}
+        onAbout={openAbout}
+        onAboutSlide={setAboutSlide}
+        onCloseAbout={closeAbout}
         startAtWork={startAtWork}
         startAtPanel={startPanel?.id}
       />
