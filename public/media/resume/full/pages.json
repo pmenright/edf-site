@@ -1,0 +1,26 @@
+{
+  "pdf": "/downloads/Enright-Resume.pdf",
+  "pages": [
+    {
+      "width": 2040,
+      "height": 2640,
+      "avif": "/media/resume/full/page-01-1280.avif 1280w, /media/resume/full/page-01-1920.avif 1920w, /media/resume/full/page-01-2040.avif 2040w",
+      "webp": "/media/resume/full/page-01-1280.webp 1280w, /media/resume/full/page-01-1920.webp 1920w, /media/resume/full/page-01-2040.webp 2040w",
+      "fallback": "/media/resume/full/page-01-2040.webp"
+    },
+    {
+      "width": 2040,
+      "height": 2640,
+      "avif": "/media/resume/full/page-02-1280.avif 1280w, /media/resume/full/page-02-1920.avif 1920w, /media/resume/full/page-02-2040.avif 2040w",
+      "webp": "/media/resume/full/page-02-1280.webp 1280w, /media/resume/full/page-02-1920.webp 1920w, /media/resume/full/page-02-2040.webp 2040w",
+      "fallback": "/media/resume/full/page-02-2040.webp"
+    },
+    {
+      "width": 2040,
+      "height": 2640,
+      "avif": "/media/resume/full/page-03-1280.avif 1280w, /media/resume/full/page-03-1920.avif 1920w, /media/resume/full/page-03-2040.avif 2040w",
+      "webp": "/media/resume/full/page-03-1280.webp 1280w, /media/resume/full/page-03-1920.webp 1920w, /media/resume/full/page-03-2040.webp 2040w",
+      "fallback": "/media/resume/full/page-03-2040.webp"
+    }
+  ]
+}

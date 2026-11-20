@@ -1,0 +1,419 @@
+/* Portfolio copy of nsyte.com: additions only. The site's own stylesheet is untouched. */
+
+/* The texture layers never take clicks or scrolls (backs up the page's .nopointerevents rule). */
+.div_textureoverlay_1cb24,
+.div_textureoverlay_2s28,
+.div_textureoverlay_3m71,
+.nopointerevents {
+  pointer-events: none;
+}
+
+/* Popout: sits just under the texture layers (z-index 1000) so the grain covers it like the rest of the page. */
+.mirror-popout {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  box-sizing: border-box;
+  background: rgb(30 40 55 / 0.6);
+  opacity: 0;
+  transition: opacity 250ms ease;
+  overscroll-behavior: contain;
+}
+.mirror-popout[hidden] {
+  display: none;
+}
+.mirror-popout.is-open {
+  opacity: 1;
+}
+.mirror-popout__panel {
+  position: relative;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  align-items: center;
+  column-gap: 36px;
+  width: min(780px, 100%);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 52px 40px 36px;
+  background: #f1f1e7;
+  border: 3px solid #1e2837;
+  border-radius: 20px;
+  transform: translate3d(0, 24px, 0);
+  transition: transform 250ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.mirror-popout.is-open .mirror-popout__panel {
+  transform: none;
+}
+.mirror-popout__brand {
+  display: grid;
+  place-items: center;
+  align-self: stretch;
+  border-right: 3px solid #1e2837;
+  padding-right: 36px;
+}
+.mirror-popout__brand img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.mirror-popout__body {
+  min-width: 0;
+}
+.mirror-popout__title.heading-6 {
+  margin: 0 0 24px;
+  font-size: 2em;
+  line-height: 1.15;
+}
+.mirror-popout__close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #1e2837;
+  font: 36px/44px Futura pt, sans-serif;
+  cursor: pointer;
+}
+.mirror-popout__close:focus-visible {
+  outline: 3px solid #008664;
+  border-radius: 50%;
+}
+.mirror-popout .form-block {
+  width: auto; /* the site sizes this form to the screen (85-90vw) on phones; here it fills the panel */
+  margin: 0;
+}
+/* Narrow screens: logo on top, then the headline and form */
+@media screen and (max-width: 700px) {
+  .mirror-popout__panel {
+    grid-template-columns: 1fr;
+    row-gap: 20px;
+  }
+  .mirror-popout__brand {
+    border-right: 0;
+    padding-right: 0;
+  }
+  .mirror-popout__brand img {
+    width: 84px;
+  }
+}
+@media screen and (max-width: 479px) {
+  .mirror-popout__panel {
+    padding: 52px 22px 28px;
+  }
+  .mirror-popout__title.heading-6 {
+    font-size: 1.6em;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mirror-popout,
+  .mirror-popout__panel {
+    transition: none;
+  }
+}
+
+/* After sending a form: just "Thanks!", without the page's green underline (it read as a link). */
+.w-form-done .text-block-3 {
+  border-bottom: 0;
+}
+
+/* Resume lightbox (mirror.js): the resume's pages on a dark backdrop, like the main site's viewer,
+   above the texture layers (z-index 1000) so the pages read cleanly. Its buttons are the page's own
+   red submit button and a cream close circle in the popout's navy. */
+.mirror-resume {
+  position: fixed;
+  inset: 0;
+  z-index: 1001;
+}
+.mirror-resume[hidden] {
+  display: none;
+}
+.mirror-resume__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(30 40 55 / 0.9);
+  opacity: 0;
+  transition: opacity 400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.mirror-resume__scroller {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  outline: none;
+  cursor: zoom-out;
+  transform: translate3d(0, 100%, 0);
+  transition: transform 400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.mirror-resume__pages {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: min(90vw, 1000px);
+  margin: 0 auto;
+  padding: 88px 0 64px;
+}
+.mirror-resume__page {
+  display: block;
+  width: 100%;
+  height: auto;
+  cursor: auto;
+  border-radius: 5px;
+}
+.mirror-resume__controls {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  opacity: 0;
+  transform: translate3d(calc(100% + 40px), 0, 0);
+  transition: opacity 400ms ease, transform 400ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.mirror-resume.is-open .mirror-resume__backdrop,
+.mirror-resume.is-open .mirror-resume__controls {
+  opacity: 1;
+}
+.mirror-resume.is-open .mirror-resume__scroller,
+.mirror-resume.is-open .mirror-resume__controls {
+  transform: none;
+}
+/* the page's red submit button, sized to its word */
+.mirror-resume .submit-button {
+  width: auto;
+  margin: 0;
+  padding: 9px 22px;
+  font-size: 18px;
+  line-height: 24px;
+  text-decoration: none;
+}
+.mirror-resume .submit-button:focus-visible,
+.mirror-resume__close:focus-visible {
+  outline: 3px solid #f1f1e7;
+  outline-offset: 3px;
+}
+.mirror-resume__close {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 3px solid #1e2837;
+  border-radius: 50%;
+  background: #f1f1e7;
+  color: #1e2837;
+  font: 32px/1 Futura pt, sans-serif;
+  cursor: pointer;
+  transition: transform 0.3s cubic-bezier(0.39, 0.575, 0.565, 1);
+}
+.mirror-resume__close:hover {
+  transform: scale(1.1);
+}
+.mirror-resume__close span {
+  margin-top: -3px;
+}
+/* DOWNLOAD's popup: the contact popout's cream panel */
+.mirror-resume__popup {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(30 40 55 / 0.6);
+}
+.mirror-resume__popup[hidden] {
+  display: none;
+}
+.mirror-resume__popup-panel {
+  position: relative;
+  box-sizing: border-box;
+  width: min(480px, 100%);
+  padding: 56px 32px 40px;
+  text-align: center;
+  background: #f1f1e7;
+  border: 3px solid #1e2837;
+  border-radius: 20px;
+}
+.mirror-resume__popup-title.heading-6 {
+  margin: 0 0 28px;
+  font-size: 2em;
+  line-height: 1.15;
+}
+.mirror-resume__popup-download.submit-button {
+  display: inline-block;
+}
+@media screen and (max-width: 479px) {
+  .mirror-resume__controls {
+    top: 12px;
+    right: 12px;
+  }
+  .mirror-resume__pages {
+    padding-top: 76px;
+    gap: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mirror-resume__backdrop,
+  .mirror-resume__scroller,
+  .mirror-resume__controls {
+    transition: none;
+  }
+}
+
+/* Hero layout (Jim, 2026-11-13). The factory drawing matches the Drag & Drop graphic's width,
+   the factory sits on top of the graphic (its arm swings over it), and the intro text and
+   Take a Test Drive sit below the rule under the factory. That rule is the page's own 7px border
+   on .div_hero_animation, the same as the masthead and footer rules. */
+:root {
+  --mirror-hero-width: 65vw;
+  /* the factory drawing fills 87.4% of its animation's width, so the animation is sized up to match */
+  --mirror-factory-width: min(calc(var(--mirror-hero-width) / 0.874), 85vw);
+  /* pulls the factory up so its resting arms sit just under the graphic (scales with the width) */
+  --mirror-factory-lift: calc(var(--mirror-hero-width) * -0.116);
+}
+.div_hero_animation {
+  z-index: 3;
+}
+.image-14 {
+  width: var(--mirror-hero-width);
+}
+.lottie-animation-7 {
+  width: var(--mirror-factory-width);
+  margin-top: var(--mirror-factory-lift);
+  /* breathing room between the factory and the rule under it */
+  padding-bottom: calc(var(--mirror-factory-width) * 0.03);
+  margin-left: auto;
+  margin-right: auto;
+}
+.mirror-hero-text.div_heroblurb {
+  margin-top: 0;
+}
+@media screen and (min-width: 992px) {
+  .mirror-hero-text .p_hero {
+    width: 50vw;
+  }
+}
+/* Smaller screens keep the graphic's original sizes (80% / 90% of the 85vw column); the factory matches. */
+@media screen and (max-width: 991px) {
+  :root {
+    --mirror-hero-width: 68vw;
+  }
+}
+@media screen and (max-width: 479px) {
+  :root {
+    --mirror-hero-width: 76.5vw;
+  }
+}
+
+/* Body text: Webflow jumps from 16px to 24px at 1440px wide. In between it now grows smoothly
+   (17px at 992px up to 24px, line spacing 20px up to 25px), meeting Webflow's sizes at both ends,
+   so a window just under 1440 doesn't get small text. */
+@media screen and (min-width: 992px) and (max-width: 1439px) {
+  .p_workflow, .text-block, .p_hero, .p_ui_content, .list-item, .list-item-2, .list-item-3, .list-item-4,
+  .paragraph, .field-label, .field-label-2, .field-label-3, .text-block-2 {
+    font-size: clamp(17px, calc(17px + (100vw - 992px) * 7 / 447), 24px);
+    line-height: clamp(20px, calc(20px + (100vw - 992px) * 5 / 447), 25px);
+  }
+}
+
+/* Footer contact column (Jim, 2026-11-13): his anvil mark in Nsyte green, centered over the contact
+   lines; then a rule like the page's others, then links to the Design and Video sides of his portfolio.
+   The block is as wide as its longest line (the email), so the logo, the rule and the links line up with it. */
+.mirror-contact {
+  width: fit-content;
+  max-width: 100%;
+}
+.mirror-contact__logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+.mirror-footer-logo {
+  display: block;
+  width: 124px;
+  height: auto;
+}
+/* contact lines sit a little closer together (the site spaces them 10px apart); same type size */
+.mirror-contact .text-block-2 {
+  padding-bottom: 5px;
+}
+/* hover underline in the page's orange (the Submit button's color) instead of the text color */
+.mirror-contact .link-3:hover,
+.mirror-contact .link-4:hover {
+  text-decoration-color: #ff6553;
+  text-decoration-thickness: max(2px, 0.09em); /* a little heavier than the font's own underline */
+}
+.mirror-contact__links.text-block-2 {
+  display: flex;
+  justify-content: center;
+  gap: 0 1.1em;
+  margin-top: 14px;
+  padding: 14px 0 0;
+  border-top: 7px solid #1e2837;
+}
+/* green like the headings, sized to fit under the rule; they grow on hover like the benefit icons */
+.mirror-contact__links .mirror-footer-link.heading-6 {
+  display: block;
+  margin: 0;
+  font-size: 1.3em;
+  line-height: 1.25;
+  text-decoration: none;
+  transition: transform 0.2s;
+}
+.mirror-contact__links .mirror-footer-link.heading-6:hover,
+.mirror-contact__links .mirror-footer-link.heading-6:focus-visible {
+  transform: scale(1.05);
+}
+@media screen and (max-width: 767px) {
+  .mirror-footer-logo { width: 100px; }
+}
+
+/* One content column for every section below the hero (Jim, 2026-11-13). Webflow sized each block
+   as a different share of a different parent (60%, 70vw, 80%...) and inset two-column text by 40px,
+   so the edges wandered. The hero keeps its own sizes (above); the masthead, the rules and the
+   footer frame stay at the wider 85vw. */
+:root {
+  --mirror-column: 65vw;
+}
+@media screen and (max-width: 991px) {
+  :root { --mirror-column: 80vw; }
+}
+@media screen and (max-width: 479px) {
+  :root { --mirror-column: 85vw; }
+}
+.p_workflow,
+.div_benefitimages,
+.div_benefitblocks,
+.div_ui_content_sidebyside,
+.div_ui_content_stacked,
+.div_category_benefits,
+.div_client_list,
+.div_nsyteinfo,
+.div_contactform {
+  width: var(--mirror-column);
+  margin-left: auto;
+  margin-right: auto;
+}
+/* the two videos: same column, 16:9 */
+.videocontainer {
+  width: var(--mirror-column);
+  padding-top: calc(var(--mirror-column) * 0.5625);
+}
+/* two-column text starts right at the column edge instead of 40px in */
+.div-block {
+  padding-left: 0;
+}
+
+/* Selected text: the page's orange (the Submit button's color), with ink text so it stays readable */
+::selection {
+  background-color: #ff6553;
+  color: #1e2837;
+}

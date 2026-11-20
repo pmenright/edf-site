@@ -1,0 +1,478 @@
+@import "tailwindcss";
+@import "react-lite-youtube-embed/dist/LiteYouTubeEmbed.css";
+
+@font-face {
+  font-family: "DDC Hardware";
+  src: url("../assets/fonts/DDCHardware-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/*
+  Breakpoints mirror the Webflow site, written mobile-first:
+  base = phones (<480), sm = 480+, md = 768+, lg = 992+ (horizontal desktop), wide = 1920+
+*/
+@theme {
+  --breakpoint-*: initial;
+  --breakpoint-sm: 480px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 992px;
+  --breakpoint-wide: 1920px;
+
+  --color-ink: #1d262c;
+  --color-sand: #cdbaa7;
+  --color-tomato: #f15b49;
+  --color-amber: #fdba5a;
+
+  --font-ddc: "DDC Hardware", "Arial Narrow", sans-serif;
+
+  /* Webflow's thumbnail color-reveal curve */
+  --ease-reveal: cubic-bezier(0.55, 0.055, 0.675, 0.19);
+}
+
+/*
+  The horizontal strip (desktop) layout: 992px and wider AND landscape-ish (at least 5:4).
+  Portrait tablets and portrait monitors get the vertical stack instead, since their square panels
+  would be wider than the screen. Keep in sync with STRIP_QUERY in src/hooks/useMediaQuery.ts.
+*/
+@custom-variant strip (@media (min-width: 992px) and (min-aspect-ratio: 5/4));
+
+/* Which of a button's hover frames is showing (see .art-btn). A whole number, so any point in a
+   transition lands on a whole frame. */
+@property --art-frame {
+  syntax: "<integer>";
+  inherits: true;
+  initial-value: 0;
+}
+
+@layer base {
+  html,
+  body {
+    overscroll-behavior: none;
+  }
+
+  body {
+    background-color: var(--color-ink);
+    color: var(--color-sand);
+    font-family: var(--font-ddc);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+}
+
+@layer components {
+  /* Thumbnails: grayscale on desktop until hovered, always color on mobile */
+  .thumb {
+    transition: filter 0.2s var(--ease-reveal);
+  }
+  @media (min-width: 992px) and (min-aspect-ratio: 5/4) {
+    .thumb {
+      filter: saturate(0%);
+    }
+    .panel:hover .thumb,
+    .panel:focus-visible .thumb {
+      filter: saturate(100%);
+    }
+  }
+
+  /* Keyboard focus on a project tile: ink / sand / ink bands, so the ring shows on any artwork,
+     light or dark. Drawn on ::after because the image would cover the button's own box-shadow. */
+  .panel::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    border: 3px solid var(--color-ink);
+    box-shadow:
+      inset 0 0 0 3px var(--color-sand),
+      inset 0 0 0 5px var(--color-ink);
+  }
+  .panel:focus-visible::after {
+    opacity: 1;
+  }
+
+  /*
+    Desktop nav column ("rail"). It rides in the strip after the hero until its left edge reaches the
+    left edge of the screen, then pins there and narrows to a slim docked rail as the work scrolls in
+    (the first panel pushes its edge in). The buttons keep their height the whole way and only get
+    narrower, ending as squares. --squeeze runs from 0 (full column) to 1 (docked); Nav.tsx sets it
+    from docking (DesktopGallery.tsx collapses the rail when the first panel reaches the docked
+    edge) and from hovering the docked rail, which opens it back up. --scroll-squeeze is the docking
+    part alone (the logo follows only that).
+    --nav-w is the full column width. --btn-h (button height) and --rail-narrow (docked width) are
+    shares of it, set from src/lib/rail.ts.
+  */
+  .rail-slot {
+    --nav-w: 20vh;
+    width: var(--nav-w);
+  }
+  @media (min-width: 1920px) {
+    .rail-slot {
+      --nav-w: 300px;
+    }
+  }
+  .rail {
+    --squeeze: 0;
+    width: calc(var(--nav-w) * (1 - (1 - var(--rail-narrow)) * var(--squeeze)));
+    /* The wide art is wider than the docked rail; keep it from spilling over the work. */
+    overflow-x: clip;
+  }
+  /* Logo: 80% of the column beside the hero, shrinking with the scroll to the square buttons' width
+     once docked. It follows the scroll only (--scroll-squeeze), not hover, so opening the docked rail
+     never moves the buttons below it. */
+  /*
+    Logo spacing, measured optically: from the top of the rail to the top of the logo, and from the
+    baseline of "design foundry" (79.92 of the logo's 82.12 height, so the descenders hang) to the rule.
+    Next to the hero it's 30px / 30px. Docked it's tighter, so that when the rail opens on hover the
+    logo's wording (grown to the buttons' width) would get 30px / 30px in the same space, without the
+    rule or the buttons moving. The opened rail now shows the logotype lockup instead, which is a little
+    taller (no descenders, a solid bar), so it's centered in that space: about 25px above and below
+    with a 300px column. --scroll-squeeze is the docking alone (not hover), 0 to 1.
+      0.048095 = half of (docked logo's height to its baseline - grown wording's height to its baseline), per --nav-w
+      0.02625  = the logo's descender depth next to the hero, per --nav-w
+      0.03111  = how much deeper the rule sits relative to that once docked, per --nav-w
+  */
+  .rail {
+    --scroll-squeeze: 0;
+    --logo-w: calc(var(--nav-w) * (0.8 - (0.8 - var(--btn-h)) * var(--scroll-squeeze)));
+    padding-top: calc(30px - var(--nav-w) * 0.048095 * var(--scroll-squeeze));
+  }
+  .rail-logo {
+    width: var(--logo-w);
+  }
+  .rail-logo-rule {
+    margin-top: calc(30px - var(--nav-w) * (0.02625 + 0.03111 * var(--scroll-squeeze)));
+  }
+  /* The logo (67.05 x 82.12) split at 58.5, in the gap between the anvil (ends at 57.3) and the
+     wording (starts at 59.8), and the wording split at 71.7, between ENRIGHT (ends at 70.6) and
+     "design foundry" (starts at 72.84). Every piece shows the untouched logo file, cropped. */
+  .logo-mark {
+    clip-path: inset(0 0 28.76% 0);
+  }
+  .logo-enright {
+    clip-path: inset(71.24% 0 12.69% 0);
+  }
+  .logo-foundry {
+    clip-path: inset(87.31% 0 0 0);
+  }
+  /* The logotype lockup (edf-logotype-lockup.svg, 67.1 x 23.1, uncropped), placed so its ENRIGHT
+     sits exactly on the logo's (lockup ENRIGHT starts at 0.022, 0.017; the logo's at 0, 59.8). */
+  .logo-lockup {
+    left: calc(-0.022 / 67.05 * 100%);
+    top: calc(59.783 / 82.12 * 100%);
+    width: calc(67.1 / 67.05 * 100%);
+    max-width: none;
+  }
+  /* The wording and lockup grow together from the logo's bottom edge. Opened (--words 1) they're 80%
+     of the column wide, so the lockup is 0.27562 of the column tall, and it sits centered between
+     the top of the rail and the rule (same gap above and below; the lockup is flat top and bottom).
+     This is how far that moves its bottom from the logo's bottom. */
+  .logo-words {
+    transform-origin: 50% 100%;
+    translate: 0 calc(var(--words, 0) * (var(--nav-w) * (0.11558 + 0.0084925 * var(--scroll-squeeze)) - var(--logo-w) * 0.612379));
+  }
+  /* Button box: the wide button (1153 x 407 artboard) at 80% of the column, getting narrower at the
+     same height until it's square. */
+  .rail-btn {
+    width: calc(var(--nav-w) * (0.8 - (0.8 - var(--btn-h)) * var(--squeeze)));
+    height: calc(var(--nav-w) * var(--btn-h));
+  }
+  /* Wide and square art stay at their own full size (never stretched or scaled) while they swap. */
+  .rail-art {
+    flex: none;
+    width: calc(var(--nav-w) * 0.8);
+  }
+  .rail-square-art {
+    flex: none;
+    width: calc(var(--nav-w) * var(--btn-h));
+    height: calc(var(--nav-w) * var(--btn-h));
+  }
+  /* The wide art dissolves into the square art over the middle of the squeeze (30% to 70%). */
+  .rail-wide {
+    opacity: clamp(0, (0.7 - var(--squeeze)) / 0.4, 1);
+  }
+  .rail-square {
+    opacity: clamp(0, (var(--squeeze) - 0.3) / 0.4, 1);
+  }
+  /* CONTACT: 16.8px in the wide rail (25.2px at 1920+), shrinking as the rail docks until it's as
+     wide as the square buttons ("Contact" sets 4.482 times its font size wide). A slight grow on hover. */
+  .rail-slot {
+    --contact-size: 16.8px;
+  }
+  @media (min-width: 1920px) {
+    .rail-slot {
+      --contact-size: 25.2px;
+    }
+  }
+  .rail-contact {
+    display: inline-block;
+    font-size: calc(var(--contact-size) - (var(--contact-size) - var(--nav-w) * var(--btn-h) / 4.482) * var(--squeeze));
+    transition: scale 0.15s ease-out;
+  }
+  .rail-contact:hover,
+  .rail-contact:focus-visible {
+    scale: 1.08;
+  }
+  /* Docked: the buttons and links can't be clicked; a click on the rail opens it instead (Nav.tsx).
+     The logo (back to the hero) always works. */
+  .rail[data-collapsed] :is(button, a):not(.rail-home) {
+    pointer-events: none;
+  }
+  /*
+    Animated button art (ButtonArt.tsx). Each button's frames are stacked in one box and only the
+    one numbered --art-frame shows. Hovering (data-hover, set for mouse and pen, not touch) or
+    keyboard focus runs --art-frame on the button (.art-btn) from 0 to
+    --art-last at the art's frame rate; because it's a whole number it always shows a whole frame,
+    and leaving mid-way runs back from wherever it got to.
+  */
+  .art-btn {
+    --art-frame: 0;
+    transition: --art-frame var(--art-dur, 0.4s) linear;
+  }
+  .art-btn[data-hover],
+  .art-btn:focus-visible {
+    --art-frame: var(--art-last);
+  }
+  .art-window {
+    position: relative;
+    display: block;
+    overflow: clip;
+  }
+  /* Frame --i shows when --art-frame equals it: 1 - (difference squared) is 1 there and 0 or less
+     everywhere else, and opacity clamps to 0..1. */
+  .art-frame,
+  .art-active {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    user-select: none;
+  }
+  .art-frame {
+    opacity: calc(1 - (var(--art-frame) - var(--i)) * (var(--art-frame) - var(--i)));
+  }
+  .art-active {
+    visibility: hidden;
+  }
+  .art-window[data-active] .art-frame {
+    visibility: hidden;
+  }
+  .art-window[data-active] .art-active {
+    visibility: visible;
+  }
+
+  /* Popups (Popup.tsx: contact, resume): a native <dialog> covering the screen, its box centered. */
+  .popup {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 24px;
+    border: 0;
+    background: transparent;
+    overflow: clip;
+    touch-action: none;
+    overscroll-behavior: contain;
+  }
+  .popup[open] {
+    display: grid;
+    place-items: center;
+  }
+  .popup::backdrop {
+    background: transparent;
+  }
+  .popup-panel {
+    max-height: calc(100dvh - 48px);
+    overflow-y: auto;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+  }
+  /* Opening: the backdrop dims and the box rises into place with the viewer's decelerating curve;
+     closing reverses it, accelerating away. */
+  .popup-backdrop,
+  .popup-panel {
+    animation-duration: 250ms;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    animation-fill-mode: both;
+  }
+  .popup-backdrop { animation-name: viewer-fade-in; }
+  .popup-panel { animation-name: popup-in; }
+  .popup [data-leaving] { animation-timing-function: cubic-bezier(0.32, 0, 0.67, 0); }
+  .popup-backdrop[data-leaving] { animation-name: viewer-fade-out; }
+  .popup-panel[data-leaving] { animation-name: popup-out; }
+
+  /* Project viewer: a full-screen native <dialog> */
+  .viewer {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    /* clip, not hidden: a hidden box can still be scrolled by the browser. Firefox did exactly that
+       when focus moved into the viewer mid-slide, which made the panel jump and bounce. */
+    overflow: clip;
+  }
+  .viewer::backdrop {
+    background: transparent;
+  }
+  /* Touch: the viewer itself never scrolls the page; only the description text and a document's
+     pages scroll. Two fingers still pinch-zoom, so a phone can zoom in on artwork and the resume. */
+  .viewer {
+    touch-action: pinch-zoom;
+    overscroll-behavior: contain;
+  }
+  .viewer #project-description {
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+  }
+
+  /* Opening: everything shares one duration and one decelerating curve, so the artwork, the
+     dimming and the buttons all ease into place together. Closing mirrors it (accelerating away).
+     Change the timing here only. */
+  .viewer {
+    --viewer-duration: 400ms;
+    --viewer-ease-in: cubic-bezier(0.22, 1, 0.36, 1);
+    --viewer-ease-out: cubic-bezier(0.32, 0, 0.67, 0);
+  }
+  .viewer-backdrop,
+  .viewer-slide,
+  .viewer-controls {
+    animation-duration: var(--viewer-duration);
+    animation-timing-function: var(--viewer-ease-in);
+    animation-fill-mode: both;
+  }
+  .viewer-backdrop { animation-name: viewer-fade-in; }
+  .viewer-slide { animation-name: viewer-in; will-change: transform; }
+  .viewer-controls { animation-name: viewer-controls-in; will-change: transform; }
+  .viewer [data-leaving] { animation-timing-function: var(--viewer-ease-out); }
+  .viewer-backdrop[data-leaving] { animation-name: viewer-fade-out; }
+  .viewer-slide[data-leaving] { animation-name: viewer-out; }
+  .viewer-controls[data-leaving] { animation-name: viewer-controls-out; }
+
+  /* A project's extra buttons (Visit site, Watch video) call attention to themselves once the viewer
+     has arrived: they swell a little and flash their hover colors three times, then settle. This plays
+     once per opening: the viewer takes the class off when it ends, or as soon as the button is hovered
+     or pressed (useAttention in ProjectViewer.tsx). */
+  .viewer-attention {
+    animation: viewer-attention 960ms ease-in-out calc(var(--viewer-duration) + 120ms);
+  }
+
+  /* Lite YouTube facade sizing inside the viewer */
+  .viewer .yt-lite {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+/* Scroll hint on the hero: ball drops and returns, arrow nudges right. 1.8s cycle. */
+@keyframes scroll-ball {
+  0%, 27.8% { transform: translateY(0); }
+  50%, 77.8% { transform: translateY(30px); }
+  100% { transform: translateY(0); }
+}
+@keyframes scroll-arrow {
+  0%, 27.8% { transform: translateX(0); }
+  38.9% { transform: translateX(7px); }
+  44.4% { transform: translateX(5px); }
+  50%, 77.8% { transform: translateX(7px); }
+  100% { transform: translateX(0); }
+}
+.scroll-ball {
+  animation: scroll-ball 1.8s ease-in-out infinite;
+}
+.scroll-arrow {
+  animation: scroll-arrow 1.8s ease-in-out infinite;
+}
+
+@keyframes viewer-in {
+  from { transform: translate3d(0, 100%, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+@keyframes viewer-out {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(0, 100%, 0); }
+}
+@keyframes viewer-controls-in {
+  from { transform: translate3d(calc(100% + 40px), 0, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+@keyframes viewer-controls-out {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(calc(100% + 40px), 0, 0); }
+}
+/* "off" is the button's resting look (bg-ink/40, sand text); "on" is its hover look (sand, ink text) */
+@keyframes viewer-attention {
+  0%, 30%, 60%, 100% {
+    background-color: color-mix(in oklab, var(--color-ink) 40%, transparent);
+    color: var(--color-sand);
+  }
+  12%, 20%, 42%, 50%, 72%, 82% {
+    background-color: var(--color-sand);
+    color: var(--color-ink);
+  }
+  0%, 100% { transform: scale(1); }
+  12%, 82% { transform: scale(1.1); }
+}
+@keyframes popup-in {
+  from { opacity: 0; transform: translate3d(0, 24px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+@keyframes popup-out {
+  from { opacity: 1; transform: translate3d(0, 0, 0); }
+  to { opacity: 0; transform: translate3d(0, 24px, 0); }
+}
+@keyframes viewer-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes viewer-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Reduced motion: no sliding, everything just fades. */
+  .viewer-backdrop,
+  .viewer-slide,
+  .viewer-controls {
+    animation-name: viewer-fade-in;
+    animation-duration: 150ms;
+  }
+  .viewer-backdrop[data-leaving],
+  .viewer-slide[data-leaving],
+  .viewer-controls[data-leaving] {
+    animation-name: viewer-fade-out;
+  }
+  .popup-backdrop,
+  .popup-panel {
+    animation-name: viewer-fade-in;
+    animation-duration: 150ms;
+  }
+  .popup-backdrop[data-leaving],
+  .popup-panel[data-leaving] {
+    animation-name: viewer-fade-out;
+  }
+  .scroll-ball,
+  .scroll-arrow,
+  .viewer-attention {
+    animation: none;
+  }
+  /* Buttons cut straight from the first frame to the last. */
+  .art-btn {
+    transition: none;
+  }
+  .thumb {
+    transition: none;
+  }
+}

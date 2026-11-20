@@ -1,0 +1,37 @@
+{
+  "_about": "Which exported artboard plays when. Frames come from <button>/SVGs/, or the folder in 'dir' (SVGs/BotLeft: the bottom-left aligned set). Numbers are the artboard numbers at the end of each file name (design-wide-04.svg is 04); a file name (resume-wide.svg) or a path from the button's folder (SVGs/resume-wide.svg) works too. Delete a 'dir' line to go back to the frames in SVGs/. 'frames' plays in order on hover: the first is the resting frame, the last is the held end frame. List a number twice to hold that frame a beat longer. 'active' is the selected frame. 'color' is the color the artwork's shapes draw in (they're exported unfilled, so they take this color; #1d262c is the logo's ink). After changing art or this file, run: npm run buttons",
+  "fps": 12,
+  "color": "#1d262c",
+  "buttons": {
+    "design-wide": {
+      "dir": "SVGs/BotLeft",
+      "frames": ["03", "04", "05", "06", "07", "08"],
+      "active": "09"
+    },
+    "video-wide": {
+      "dir": "SVGs/BotLeft",
+      "frames": ["03", "04", "05", "06", "07", "08"],
+      "active": "09"
+    },
+    "resume-wide": {
+      "dir": "SVGs/BotLeft",
+      "frames": ["03", "04", "05", "06", "07", "08"],
+      "active": "09"
+    },
+    "design-square": {
+      "dir": "SVGs/BotLeft",
+      "frames": ["03"],
+      "active": "01"
+    },
+    "video-square": {
+      "dir": "SVGs/BotLeft",
+      "frames": ["01"],
+      "active": "02"
+    },
+    "resume-square": {
+      "dir": "BotLeft",
+      "frames": ["01"],
+      "active": "02"
+    }
+  }
+}

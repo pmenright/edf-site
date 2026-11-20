@@ -1,0 +1,611 @@
+[
+  {
+    "id": "tesar-drive",
+    "category": "design",
+    "order": 1,
+    "title": "Tesar Drive",
+    "discipline": "Brand Design",
+    "description": "This client wanted to evoke the look at feel of classic mid-century british motorcycle brands such as Norton, Triumph, and Royal Enfield for their line of in-wheel electric motors and transmissions.",
+    "thumb": {
+      "type": "image",
+      "asset": "design/thumbs/td.png",
+      "alt": "Tesar Drive: Brand Design"
+    },
+    "media": [
+      {
+        "type": "image",
+        "asset": "design/full/td_full.png",
+        "alt": "Tesar Drive project board"
+      }
+    ],
+    "alternate": {
+      "label": "Watch video",
+      "backLabel": "See design",
+      "media": {
+        "type": "youtube",
+        "youtubeId": "l1kYXwdMd4o",
+        "title": "Tesar Drive video",
+        "poster": "maxresdefault"
+      }
+    }
+  },
+  {
+    "id": "nsyte",
+    "category": "design",
+    "order": 2,
+    "title": "Nsyte",
+    "discipline": "Brand Design",
+    "description": "Nsyte, an industrial technology company, operating in the manufacturing space, wanted something different. Colors that stand out among the crowd, an animal mascot to give customers something to attach to, and illustrations that clearly show abstract concepts. This brand included a website, several tutorial animations, and a large conference booth.",
+    "thumb": {
+      "type": "lottie",
+      "src": "/lottie/nsyte-thumb.json",
+      "alt": "Nsyte: Brand Design"
+    },
+    "media": [
+      {
+        "type": "image",
+        "asset": "design/full/Nsyte.jpg",
+        "alt": "Nsyte project board"
+      }
+    ],
+    "link": {
+      "label": "Visit site",
+      "href": "/nsyte/"
+    }
+  },
+  {
+    "id": "tempest",
+    "category": "design",
+    "order": 3,
+    "title": "Tempest",
+    "discipline": "Brand Design",
+    "description": "This responsive brand system includes custom lettering, a leviathan mascot, and plenty sizes and formats for the companys designers to use in layouts. Six alternative texture backgrounds were also provided, as well as a toned-down colorway for when tennis ball green isnt appropriate.",
+    "thumb": {
+      "type": "image",
+      "asset": "design/thumbs/TempestThumb.png",
+      "alt": "Tempest: Brand Identity"
+    },
+    "media": [
+      {
+        "type": "image",
+        "asset": "design/full/Tempest.png",
+        "alt": "Tempest project board",
+        "split": true
+      }
+    ]
+  },
+  {
+    "id": "honest-barber",
+    "category": "design",
+    "order": 4,
+    "title": "Honest Barber",
+    "discipline": "T-shirt Illustrations",
+    "description": "One of my favorite projects. I was getting my hair cut at Little Barber, here in Austin, when I find out my Barber is the owner, and he needs some merch. We had been chatting about cars and exes, and this idea was formed. I never did get a shirt though...",
+    "thumb": {
+      "type": "image",
+      "asset": "design/thumbs/hb.png",
+      "alt": "Honest Barber: T-shirt Illustration"
+    },
+    "media": [
+      {
+        "type": "image",
+        "asset": "design/full/hb_full.png",
+        "alt": "Honest Barber project board"
+      }
+    ]
+  },
+  {
+    "id": "army-futures-command",
+    "category": "design",
+    "order": 5,
+    "title": "Army Futures Command",
+    "discipline": "Brand Design",
+    "description": "Created for the U.S. Armys Army Futures Command. These Soldiers get up in the morning and put on slacks and a button up, instead of their uniform, to work with entrepreneurs and innovators in the private sector. This responsive design system allowed the rather stodgy Army brand to blend in with the private sector companies they were looking to court. Note: Logo Option 3 in the branding presentation is not my work.",
+    "thumb": {
+      "type": "image",
+      "asset": "design/thumbs/afc.png",
+      "alt": "Army Futures Command: Brand Design"
+    },
+    "media": [
+      {
+        "type": "image",
+        "asset": "design/full/afc_full.png",
+        "alt": "Army Futures Command project board"
+      }
+    ],
+    "alternate": {
+      "label": "View branding presentation",
+      "backLabel": "See design",
+      "media": {
+        "type": "document",
+        "alt": "Army Futures Command branding proposal",
+        "pages": [
+          "design/full/afc-presentation/page-01.png",
+          "design/full/afc-presentation/page-02.png",
+          "design/full/afc-presentation/page-03.png",
+          "design/full/afc-presentation/page-04.png",
+          "design/full/afc-presentation/page-05.png",
+          "design/full/afc-presentation/page-06.png",
+          "design/full/afc-presentation/page-07.png",
+          "design/full/afc-presentation/page-08.png",
+          "design/full/afc-presentation/page-09.png",
+          "design/full/afc-presentation/page-10.png",
+          "design/full/afc-presentation/page-11.png",
+          "design/full/afc-presentation/page-12.png",
+          "design/full/afc-presentation/page-13.png",
+          "design/full/afc-presentation/page-14.png",
+          "design/full/afc-presentation/page-15.png",
+          "design/full/afc-presentation/page-16.png"
+        ]
+      }
+    }
+  },
+  {
+    "id": "miami",
+    "category": "design",
+    "order": 6,
+    "title": "Miami",
+    "discipline": "Typeface",
+    "description": "Created for an event taking place in Miami, this typeface is directly inspired by the type and architecture of Miami.",
+    "thumb": {
+      "type": "image",
+      "asset": "design/thumbs/mdt.png",
+      "alt": "Miami: Typeface"
+    },
+    "media": [
+      {
+        "type": "image",
+        "asset": "design/full/mdt_full.png",
+        "alt": "Miami project board",
+        "split": true
+      }
+    ],
+    "link": {
+      "label": "Download typeface",
+      "href": "/downloads/Miami.ttf",
+      "download": "Miami.ttf",
+      "downloadTitle": "Download the Miami Typeface"
+    }
+  },
+  {
+    "id": "candescent",
+    "category": "design",
+    "order": 7,
+    "title": "Candescent",
+    "discipline": "Brand Design",
+    "description": "This client wanted a logo that felt like the warmth of a campfire. We tossed around lots of fun concepts until we settled on this camping lantern icon. He liked the campfire icon, so I gave it to him as a secondary brand icon to be used in the future.",
+    "thumb": {
+      "type": "image",
+      "asset": "design/thumbs/candescent.png",
+      "alt": "Candescent: Brand Design"
+    },
+    "media": [
+      {
+        "type": "image",
+        "asset": "design/full/candescent_full.png",
+        "portrait": "design/full/candescent_full-vertical.png",
+        "alt": "Candescent project board"
+      }
+    ]
+  },
+  {
+    "id": "phantom-5",
+    "category": "design",
+    "order": 8,
+    "title": "Phantom 5",
+    "discipline": "Brand Design",
+    "description": "",
+    "thumb": {
+      "type": "image",
+      "asset": "design/thumbs/p5.png",
+      "alt": "Phantom 5: Brand Design"
+    },
+    "media": [
+      {
+        "type": "image",
+        "asset": "design/full/p5_full.png",
+        "alt": "Phantom 5 project board",
+        "split": "right-first"
+      }
+    ]
+  },
+  {
+    "id": "hackthemachine-unmanned",
+    "category": "design",
+    "order": 9,
+    "title": "HACKtheMACHINE Unmanned",
+    "discipline": "Event Design",
+    "description": "HACKtheMACHINE was a goliath undertaking. Three days of live programming filled with video segments, interviews, a live show, speeches, breaking news, and more. I worked with show runners and the production crew to produce hundreds of assets required to make a show like this work.",
+    "thumb": {
+      "type": "image",
+      "asset": "design/thumbs/htmu.png",
+      "alt": "HACKtheMACHINE Unmanned: Event Design"
+    },
+    "media": [
+      {
+        "type": "image",
+        "asset": "design/full/htmu_full.png",
+        "alt": "HACKtheMACHINE Unmanned project board"
+      }
+    ],
+    "link": {
+      "label": "Watch videos",
+      "href": "https://www.youtube.com/@HACKtheMACHINE/videos"
+    }
+  },
+  {
+    "id": "ekotots",
+    "category": "design",
+    "order": 10,
+    "title": "EkoTots",
+    "discipline": "Brand Design",
+    "description": "This client, a veteran and single mother, knew her colors and knew she wanted something that felt natural. We iterated over the course of two weeks to make sure everything was perfect for her brand.",
+    "thumb": {
+      "type": "image",
+      "asset": "design/thumbs/et.png",
+      "alt": "EkoTots: Brand Design"
+    },
+    "media": [
+      {
+        "type": "image",
+        "asset": "design/full/et_full.png",
+        "alt": "EkoTots project board"
+      }
+    ]
+  },
+  {
+    "id": "project-convergence",
+    "category": "design",
+    "order": 11,
+    "title": "Project Convergence",
+    "discipline": "Logo Design",
+    "description": "Project Convergence is an annual DoD event showcasing unmanned capabilities. This logo was created to show each branch coming together on one common problem.",
+    "thumb": {
+      "type": "image",
+      "asset": "design/thumbs/pc.png",
+      "alt": "PC20: Brand Design"
+    },
+    "media": [
+      {
+        "type": "image",
+        "asset": "design/full/pc_full.gif",
+        "alt": "Project Convergence project board"
+      }
+    ],
+    "alternate": {
+      "label": "View design collateral",
+      "backLabel": "See design",
+      "media": {
+        "type": "image",
+        "asset": "design/full/pc_collateral.jpg",
+        "alt": "Project Convergence Gold option look page: color palette, logo, lockup options and on-screen examples"
+      }
+    }
+  },
+  {
+    "id": "hackthemachine-virtual",
+    "category": "design",
+    "order": 12,
+    "title": "HACKtheMACHINE Virtual",
+    "discipline": "Event Design",
+    "description": "HACKtheMACHINE was a goliath undertaking. Three days of live programming filled with video segments, interviews, a live show, speeches, breaking news, and more. I worked with show runners and the production crew to produce hundreds of assets required to make a show like this work.",
+    "thumb": {
+      "type": "image",
+      "asset": "design/thumbs/htm.png",
+      "alt": "HACKtheMACHINE NavalX: Event Design"
+    },
+    "media": [
+      {
+        "type": "image",
+        "asset": "design/full/htm_full.png",
+        "alt": "HACKtheMACHINE Virtual project board"
+      }
+    ],
+    "alternate": {
+      "label": "Watch broadcast",
+      "backLabel": "See design",
+      "media": {
+        "type": "youtube",
+        "youtubeId": "nb2J7ODdgb4",
+        "title": "HACKtheMACHINE 2021 Virtual Kickoff broadcast",
+        "poster": "maxresdefault"
+      }
+    }
+  },
+  {
+    "id": "hands",
+    "category": "design",
+    "order": 13,
+    "title": "Hands",
+    "discipline": "Illustration Study",
+    "description": "",
+    "thumb": {
+      "type": "image",
+      "asset": "design/thumbs/hands.jpg",
+      "alt": "Hands: Illustration"
+    },
+    "media": [
+      {
+        "type": "image",
+        "asset": "design/full/hands_full.png",
+        "alt": "Hands project board"
+      }
+    ]
+  },
+  {
+    "id": "true-grit",
+    "category": "video",
+    "order": 1,
+    "title": "True Grit",
+    "duties": "shooting, video editing, sound design, lighting, interviewing",
+    "crewSize": "3",
+    "timeline": "2 shooting days, one week edit",
+    "description": "EOD candidates take on a colossal physical challenge at Navy dive school.",
+    "thumb": {
+      "type": "image",
+      "asset": "video/thumbs/tg.jpg",
+      "alt": "True Grit video thumbnail"
+    },
+    "media": [
+      {
+        "type": "youtube",
+        "youtubeId": "g3IYHTrEB_M",
+        "title": "True Grit: EOD Dive School",
+        "poster": "maxresdefault"
+      }
+    ]
+  },
+  {
+    "id": "future-vertical-lift",
+    "category": "video",
+    "order": 2,
+    "title": "Future Vertical Lift",
+    "duties": "video editing",
+    "crewSize": "1",
+    "timeline": "1 day edit time",
+    "description": "The U.S. Armys Future Vertical Lift is modernizing the Armys aviation capability.",
+    "thumb": {
+      "type": "image",
+      "asset": "video/thumbs/fvlausa.jpg",
+      "alt": "Future Vertical Lift video thumbnail"
+    },
+    "media": [
+      {
+        "type": "youtube",
+        "youtubeId": "v0SG7bTTisY",
+        "title": "Future Vertical Lift",
+        "poster": "maxresdefault"
+      }
+    ]
+  },
+  {
+    "id": "american-drain-works",
+    "category": "video",
+    "order": 3,
+    "title": "American Drain Works",
+    "duties": "shooting, video editing, sound design, lighting, interviewing",
+    "crewSize": "1",
+    "timeline": "1 shooting day, one day edit",
+    "description": "American Drain Works is a plumbing company that cares.",
+    "thumb": {
+      "type": "image",
+      "asset": "video/thumbs/adw.jpg",
+      "alt": "American Drain Works video thumbnail"
+    },
+    "media": [
+      {
+        "type": "youtube",
+        "youtubeId": "nmv7zw_Aztc",
+        "title": "American Drain Works: We Can Do It",
+        "poster": "maxresdefault"
+      }
+    ]
+  },
+  {
+    "id": "faar-cohort",
+    "category": "video",
+    "order": 4,
+    "title": "FAAR Cohort",
+    "duties": "shooting, video editing, motion graphics, sound design, lighting, interviewing",
+    "crewSize": "1",
+    "timeline": "5 shooting days, three week edit time for four videos",
+    "description": "This four-part series follows a cohort of companies tackling the problem of modernizing Army artillery.",
+    "thumb": {
+      "type": "image",
+      "asset": "video/thumbs/aalfaar.jpg",
+      "alt": "FAAR Cohort video thumbnail"
+    },
+    "media": [
+      {
+        "type": "youtube",
+        "youtubeId": "MY4qMSsePzc",
+        "title": "AAL FAAR Docuseries",
+        "poster": "maxresdefault"
+      }
+    ]
+  },
+  {
+    "id": "defcon",
+    "category": "video",
+    "order": 5,
+    "title": "Defcon",
+    "duties": "shooting, video editing, sound design,",
+    "crewSize": "1",
+    "timeline": "1 video per day during event, released to Youtube by end of day",
+    "description": "The Fathom5 team hosted a massive hacking event during Defcon30 in Las Vegas.",
+    "thumb": {
+      "type": "image",
+      "asset": "video/thumbs/DCThumb.png",
+      "alt": "Defcon video thumbnail"
+    },
+    "media": [
+      {
+        "type": "youtube",
+        "youtubeId": "mbL8kehQW6A",
+        "title": "DEFCON30 SEAtf: Cyber Sinkex Setup",
+        "poster": "maxresdefault"
+      }
+    ]
+  },
+  {
+    "id": "stiletto",
+    "category": "video",
+    "order": 6,
+    "title": "Stiletto",
+    "duties": "shooting, video editing, sound design, motion graphics, lighting, interviewing",
+    "crewSize": "1",
+    "timeline": "2 shooting days, one week edit",
+    "description": "When five different companies need to prove their cybersecurity systems aboard an underway vessel, the DoDs Stiletto platform answers the call.",
+    "thumb": {
+      "type": "image",
+      "asset": "video/thumbs/stiletto.png",
+      "alt": "Stiletto video thumbnail"
+    },
+    "media": [
+      {
+        "type": "youtube",
+        "youtubeId": "6-TnN9OwmmA",
+        "title": "Stiletto",
+        "poster": "maxresdefault"
+      }
+    ]
+  },
+  {
+    "id": "worst-case-scenario",
+    "category": "video",
+    "order": 7,
+    "title": "Worst Case Scenario",
+    "duties": "shooting, video editing, sound design, lighting, interview",
+    "crewSize": "4",
+    "timeline": "2 shooting days, one week edit",
+    "description": "Navy Sailors learn to fight flooding and fires in the realest way possible.",
+    "thumb": {
+      "type": "image",
+      "asset": "video/thumbs/wcs.jpg",
+      "alt": "Worst Case Scenario video thumbnail"
+    },
+    "media": [
+      {
+        "type": "youtube",
+        "youtubeId": "foj5P1_rY2g",
+        "title": "Worst Case Scenario",
+        "poster": "sddefault"
+      }
+    ]
+  },
+  {
+    "id": "spike-nlos",
+    "category": "video",
+    "order": 8,
+    "title": "Spike NLOS",
+    "duties": "shooting, video editing, sound design, lighting, interviewing",
+    "crewSize": "1",
+    "timeline": "1 shooting day, one week edit",
+    "description": "The U.S. Army tests its Spike NLOS capability.",
+    "thumb": {
+      "type": "image",
+      "asset": "video/thumbs/spike.jpg",
+      "alt": "Spike NLOS video thumbnail"
+    },
+    "media": [
+      {
+        "type": "youtube",
+        "youtubeId": "gTj7gs1Atxg",
+        "title": "Spike NLOS Testing",
+        "poster": "maxresdefault"
+      }
+    ]
+  },
+  {
+    "id": "hackthemachine",
+    "category": "video",
+    "order": 9,
+    "title": "HACKtheMACHINE",
+    "duties": "shooting, video editing, motion graphics, sound design, lighting, interviewing",
+    "crewSize": "1",
+    "timeline": "Interviews collected in the month or so leading up to the event, editing done day of the event before the kick-off.",
+    "description": "HACKtheMACHINE is the U.S. Navys premiere cyber event, allowing cybersecurity, data science and additive manufacturing professionals from the private sector and the military to team up in order to solve real problems for the Navy.",
+    "thumb": {
+      "type": "image",
+      "asset": "video/thumbs/htm.png",
+      "alt": "HACKtheMACHINE NavalX: Event Design"
+    },
+    "media": [
+      {
+        "type": "youtube",
+        "youtubeId": "nb2J7ODdgb4",
+        "title": "HACKtheMACHINE 2021 Virtual Kickoff!",
+        "poster": "maxresdefault"
+      }
+    ]
+  },
+  {
+    "id": "remembering-ma1-zamarripa",
+    "category": "video",
+    "order": 10,
+    "title": "Remembering MA1 Zamarripa",
+    "duties": "shooting, interviewing",
+    "crewSize": "3",
+    "timeline": "2 shooting days",
+    "description": "Patricio Zamarripa died protecting his city. His friends and family remember him.",
+    "thumb": {
+      "type": "image",
+      "asset": "video/thumbs/ma1.jpg",
+      "alt": "Remembering MA1 Zamarripa video thumbnail"
+    },
+    "media": [
+      {
+        "type": "youtube",
+        "youtubeId": "fBn5oikuwKk",
+        "title": "Remembering MA1 Zamarripa",
+        "poster": "sddefault"
+      }
+    ]
+  },
+  {
+    "id": "hack-the-port",
+    "category": "video",
+    "order": 11,
+    "title": "Hack the Port",
+    "duties": "shooting, video editing, sound design, lighting, interviewing",
+    "crewSize": "1",
+    "timeline": "1 shooting day, one week edit",
+    "description": "Fathom5 was live at Hack the Port 2022, in Ft. Lauderdale, Florida to demonstrate the Grace Maritime Cyber Testbed systems as well as facilitate an event in the Capture the Flag competition. Gary Kessler, Fathom5s principal consultant participated as part of several panels throughout the event. Hack the Port is a cybersecurity event, presented by MISI and Dream Port, focusing on the maritime industry.",
+    "thumb": {
+      "type": "image",
+      "asset": "video/thumbs/HtPThumb-06.png",
+      "alt": "Hack the Port video thumbnail"
+    },
+    "media": [
+      {
+        "type": "youtube",
+        "youtubeId": "ABkqTY1JW_Y",
+        "title": "Hack the Port 2022",
+        "poster": "maxresdefault"
+      }
+    ]
+  },
+  {
+    "id": "opt",
+    "category": "video",
+    "order": 12,
+    "title": "OPT",
+    "duties": "shooting, video editing, sound design, lighting, interviewing",
+    "crewSize": "1",
+    "timeline": "2 shooting days, one week edit",
+    "description": "Fathom5 travels to the Garden State to assist our partners at OPT in deploying a test buoy.",
+    "thumb": {
+      "type": "image",
+      "asset": "video/thumbs/OPTThumb-06.png",
+      "alt": "OPT video thumbnail"
+    },
+    "media": [
+      {
+        "type": "youtube",
+        "youtubeId": "RLH5ptqRoNk",
+        "title": "OPT Maritime Domain Awareness Buoy Deployment",
+        "poster": "maxresdefault"
+      }
+    ]
+  }
+]
