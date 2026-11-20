@@ -1,5 +1,8 @@
 @import "tailwindcss";
 @import "react-lite-youtube-embed/dist/LiteYouTubeEmbed.css";
+/* League Spartan (Google Fonts, SIL Open Font License), self-hosted from npm: the reading text on the
+   about / resume page and in project descriptions. */
+@import "@fontsource-variable/league-spartan";
 
 @font-face {
   font-family: "DDC Hardware";
@@ -26,8 +29,8 @@
   --color-amber: #fdba5a;
 
   --font-ddc: "DDC Hardware", "Arial Narrow", sans-serif;
-  /* Running text on the about / resume page (long reading in DDC Hardware's caps is hard work). */
-  --font-text: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Reading text on the about / resume page and in descriptions (long reading in DDC Hardware's caps is hard work). */
+  --font-text: "League Spartan Variable", "League Spartan", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 
   /* Webflow's thumbnail color-reveal curve */
   --ease-reveal: cubic-bezier(0.55, 0.055, 0.675, 0.19);
@@ -265,7 +268,13 @@
   */
   .art-btn {
     --art-frame: 0;
-    transition: --art-frame var(--art-dur, 0.4s) linear;
+    transition: --art-frame calc(var(--art-dur, 0.4s) * var(--art-slow, 1)) linear;
+  }
+  /* Touch screens (no hover to warm up on): the frames run at half speed so a tap reads as a press. */
+  @media (pointer: coarse) {
+    .art-btn {
+      --art-slow: 2;
+    }
   }
   .art-btn[data-hover],
   .art-btn:focus-visible {
@@ -361,11 +370,14 @@
   .viewer::backdrop {
     background: transparent;
   }
-  /* Touch: the viewer itself never scrolls the page; only the description text and a document's
-     pages scroll. Two fingers still pinch-zoom, so a phone can zoom in on artwork and the resume. */
+  /* Touch: the viewer never scrolls or zooms the page. Two fingers zoom the artwork alone
+     (usePinchZoom in ProjectViewer.tsx); the description text and a document's pages scroll. */
   .viewer {
-    touch-action: pinch-zoom;
+    touch-action: none;
     overscroll-behavior: contain;
+  }
+  .viewer [data-viewer-scroll] {
+    touch-action: pan-x pan-y;
   }
   .viewer #project-description {
     touch-action: pan-y;
@@ -426,103 +438,164 @@
     pointer-events: auto;
   }
 
-  /* Slide 1: words on the left, a large portrait on the right. */
-  .about-intro {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
-    align-items: center;
-    gap: clamp(32px, 5vw, 110px);
-    height: 100%;
-    padding: clamp(32px, 6vh, 80px) clamp(72px, 7vw, 140px) clamp(32px, 6vh, 80px) clamp(40px, 6vw, 120px);
+  /* Both slides measure themselves in cq units (cqw / cqh = 1% of the slide). */
+  .about-rail ~ div [data-slide] {
+    container-type: size;
   }
-  .about-copy {
-    max-width: 640px;
-  }
-  .about-eyebrow {
-    display: flex;
-    align-items: center;
-    gap: 0.75em;
-    font-family: var(--font-ddc);
-    font-size: clamp(13px, 1.6vh, 17px);
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    opacity: 0.7;
-  }
-  .about-eyebrow::before {
-    content: "";
-    width: 2.5em;
-    border-top: 2px solid currentColor;
-  }
-  .about-headline {
-    margin-top: 0.35em;
-    font-family: var(--font-ddc);
-    font-size: clamp(36px, min(4.3vw, 8vh), 104px);
-    line-height: 0.95;
-    letter-spacing: 0.01em;
-    text-wrap: balance;
-  }
-  .about-blurb {
-    margin-top: 1em;
-    max-width: 34em;
-    font-family: var(--font-text);
-    font-size: clamp(16px, min(1.3vw, 2.1vh), 21px);
-    line-height: 1.6;
-    opacity: 0.92;
-    text-wrap: pretty;
-  }
-  .about-copy .about-headline + .about-blurb {
-    margin-top: 1.2em;
-  }
-  .about-photo {
+
+  /*
+    Slide 1 (Jim's mockup). Sizes are shares of the slide (cqw, cqh), so it keeps its composition at
+    any desktop size. The letter's text size sets the em for everything in the left column.
+  */
+  /* --u is the letter's text size; the portrait is sized and placed in it too (proportions measured
+     from the mockup), so the shoulder overlaps the letter's corner the same way on any screen shape. */
+  .hello {
+    --u: clamp(12px, min(1.67cqh, 1.2cqw), 26px);
     position: relative;
-    justify-self: end;
     height: 100%;
-    max-width: 100%;
-    aspect-ratio: 4 / 5;
     overflow: hidden;
   }
-  .about-photo-placeholder {
+  .hello-copy {
     position: absolute;
-    inset: 0;
-    background-color: var(--color-sand);
-    background-image: radial-gradient(circle, rgb(29 38 44 / 0.22) 1.6px, transparent 2px);
-    background-size: 9px 9px;
-  }
-  /* Phones: the portrait first, then the words. */
-  .about-intro-stacked {
+    z-index: 1;
+    top: 50%;
+    left: 6cqw;
+    translate: 0 -50%;
     display: flex;
-    flex-direction: column-reverse;
-    gap: 32px;
-    height: auto;
-    padding: 0;
+    flex-direction: column;
+    align-items: center;
+    width: 33.5em;
+    font-size: var(--u);
   }
-  .about-intro-stacked .about-photo {
-    justify-self: auto;
-    width: min(100%, 520px, 60svh);
+  .hello-headline {
+    align-self: stretch;
+    margin-bottom: 0.32em;
+    font-family: var(--font-ddc);
+    font-size: 4.5em;
+    line-height: 0.8;
+    letter-spacing: 0.015em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .hello-letter {
+    align-self: stretch;
+    padding: 1.3em 1.55em 1.6em;
+    border: max(2px, 0.12em) solid var(--color-sand);
+    background: var(--color-ink);
+    font-family: var(--font-text);
+    line-height: 1.43;
+    text-wrap: pretty;
+  }
+  .hello-letter > p + p {
+    margin-top: 1.4em;
+  }
+  .hello-letter > p.hello-signature {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    margin-top: 1.9em;
+  }
+  .hello-name {
+    font-size: 1.45em;
+    font-weight: 500;
+    line-height: 1.05;
+  }
+  .hello-signoff {
+    margin-top: 0.25em;
+    font-size: 0.78em;
+  }
+  .hello-contact {
+    margin-top: 0.75em;
+    cursor: pointer;
+    outline: none;
+  }
+  .hello-contact > span {
+    display: block;
+    padding: 0.62em 1.1em 0.5em;
+    border: max(2px, 0.1em) solid var(--color-sand);
+    font-family: var(--font-ddc);
+    font-size: 0.72em;
+    letter-spacing: 0.1em;
+    line-height: 1;
+    text-transform: uppercase;
+    transition: background-color 0.15s, color 0.15s;
+  }
+  .hello-contact:hover > span,
+  .hello-contact:focus-visible > span {
+    background: var(--color-sand);
+    color: var(--color-ink);
+  }
+  .hello-contact:focus-visible > span {
+    outline: 2px solid var(--color-sand);
+    outline-offset: 3px;
+  }
+  /* The cutout, over the letter's corner: 66 letter-sizes tall (taller than the screen, so the top of
+     the head runs off the top) and starting 21.9 letter-sizes before the letter's right edge. On
+     squarer screens the right shoulder runs off the right instead. Wide, soft, dark-blue shadow. It
+     doesn't take clicks, so CONTACT under its transparent corner still works. */
+  .hello-photo {
+    position: absolute;
+    z-index: 2;
+    bottom: 0;
+    left: calc(6cqw + 11.6 * var(--u));
+    width: auto;
+    max-width: none;
+    height: calc(66 * var(--u));
+    pointer-events: none;
+    user-select: none;
+    filter: drop-shadow(0 0 1.6cqh rgb(8 14 22 / 0.35)) drop-shadow(0 0 7cqh rgb(8 14 22 / 0.4));
+  }
+
+  /* Phones and upright screens: the portrait first, fading out at the bottom where the photo is cut,
+     then the words at the width of the screen. */
+  .hello-stacked {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    overflow: visible;
+  }
+  .hello-stacked .hello-photo {
+    position: relative;
+    order: -1;
+    left: auto;
+    bottom: auto;
+    width: min(100%, 560px);
     height: auto;
     margin: 0 auto;
+    mask-image: linear-gradient(to bottom, #000 72%, transparent 98%);
+    filter: drop-shadow(0 0 22px rgb(8 14 22 / 0.4));
+  }
+  .hello-stacked .hello-copy {
+    position: relative;
+    top: auto;
+    left: auto;
+    translate: none;
+    width: auto;
+    margin-top: -6%;
+    --u: clamp(15px, 4.2vw, 19px);
+    container-type: inline-size;
+  }
+  /* The headline spans the letter's width whatever that is ("HELLO FRIEND." is 7.44 of its own size). */
+  .hello-stacked .hello-headline {
+    font-size: calc(100cqw / 7.44);
   }
   /* Phones on their side: portrait on the left, words on the right. */
   @media (orientation: landscape) {
-    .about-intro-stacked {
-      flex-direction: row-reverse;
-      align-items: center;
-      gap: 5vw;
+    .hello-stacked {
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 4vw;
     }
-    .about-intro-stacked .about-photo {
+    .hello-stacked .hello-photo {
       flex: none;
-      width: min(40%, 64svh);
+      width: min(42%, 80svh);
       margin: 0;
     }
-    .about-intro-stacked .about-copy {
+    .hello-stacked .hello-copy {
       flex: 1;
+      margin-top: 0;
+      --u: clamp(14px, 1.9vw, 18px);
     }
-  }
-  .about-intro-stacked .about-headline {
-    font-size: clamp(32px, min(11vw, 9svh), 76px);
-  }
-  .about-intro-stacked .about-blurb {
-    font-size: clamp(16px, 4.2vw, 19px);
   }
 
   /*

@@ -67,7 +67,7 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
   const side = !portrait && showDescription
   const drawer = portrait && showDescription ? sheetH : 0
   const stageTop = portrait ? TOP_BAND : 0
-  const stageBottom = barH + drawer + (portrait ? 4 : 0)
+  const stageBottom = barH + drawer
   const stageRight = side ? sheetW : 0
   const sheetMotion: Transition = { duration: reduce ? 0 : 0.3, ease: SWAP_EASE }
 
@@ -91,6 +91,10 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
     d.addEventListener('touchmove', onTouchMove, { passive: false })
     d.addEventListener('touchend', onTouchEnd)
     d.addEventListener('touchcancel', onTouchEnd)
+    // Safari: never let a pinch zoom the page behind or the viewer's buttons.
+    const noPageZoom = (e: Event) => e.preventDefault()
+    d.addEventListener('gesturestart', noPageZoom)
+    d.addEventListener('gesturechange', noPageZoom)
 
     // Esc is handled here rather than through the dialog's cancel event. Firefox only lets a page
     // hold a dialog open on Esc once per click, so a second Esc (description, then viewer) used to
@@ -108,6 +112,8 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
       d.removeEventListener('touchmove', onTouchMove)
       d.removeEventListener('touchend', onTouchEnd)
       d.removeEventListener('touchcancel', onTouchEnd)
+      d.removeEventListener('gesturestart', noPageZoom)
+      d.removeEventListener('gesturechange', noPageZoom)
       window.removeEventListener('keydown', onEsc, true)
     }
   }, [])
@@ -190,6 +196,8 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
     const s = pull.current
     pullHandlers.current = {
       wheel: (e) => {
+        // A trackpad pinch outside the artwork: don't zoom the page.
+        if (e.ctrlKey) return e.preventDefault()
         const now = performance.now()
         if (s.locked) {
           if (now - s.last < 220 && now - s.lockStart < 1500) {
@@ -225,7 +233,7 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
         s.amount = 0
       },
       touchMove: (e) => {
-        if (e.touches.length > 1) return // two fingers: the browser's pinch-zoom, not a swipe
+        if (e.touches.length > 1) return e.preventDefault() // two fingers: a pinch (the artwork handles it), never a swipe
         const t = e.target instanceof Element ? e.target : null
         if (t?.closest('#project-description')) return
         const dy = s.touchY - e.touches[0].clientY // finger moving up = scrolling down
@@ -348,11 +356,11 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
                 transition={swap}
               >
                 {alternate.media.type === 'image' ? (
-                  <ImageStage media={alternate.media} preloaded={isMediaReady(alternate.media)} onClose={close} anchorBottom={portrait} />
+                  <ImageStage media={alternate.media} preloaded={isMediaReady(alternate.media)} onClose={close} />
                 ) : alternate.media.type === 'document' ? (
                   <DocumentStage media={alternate.media} onClose={close} scroller={documentScroller} onScroll={onDeckScroll} clearTop={!portrait} />
                 ) : (
-                  <VideoStage media={alternate.media} onBackdrop={close} anchorBottom={portrait} />
+                  <VideoStage media={alternate.media} onBackdrop={close} />
                 )}
               </motion.div>
             ) : (
@@ -365,11 +373,11 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
                 transition={swap}
               >
                 {media.type === 'image' ? (
-                  <ImageStage media={media} preloaded={isReady(project)} onClose={close} anchorBottom={portrait} />
+                  <ImageStage media={media} preloaded={isReady(project)} onClose={close} />
                 ) : media.type === 'document' ? (
                   <DocumentStage media={media} onClose={close} scroller={documentScroller} onScroll={onDeckScroll} clearTop={!portrait} />
                 ) : (
-                  <VideoStage media={media} onBackdrop={close} anchorBottom={portrait} />
+                  <VideoStage media={media} onBackdrop={close} />
                 )}
               </motion.div>
             )}
@@ -627,7 +635,7 @@ function useAttention(initial = true) {
  * Click-to-close that ignores drags (like selecting text), so finishing a selection
  * never closes the viewer. A press that moves more than a few pixels isn't a click.
  */
-function useClickToClose(onClose: () => void) {
+function useClickToClose(onClose: () => void, blocked?: () => boolean) {
   const down = useRef<{ x: number; y: number } | null>(null)
   return {
     onPointerDown: (e: PointerEvent) => {
@@ -636,7 +644,7 @@ function useClickToClose(onClose: () => void) {
     onClick: (e: MouseEvent) => {
       const d = down.current
       down.current = null
-      if (!d || Math.hypot(e.clientX - d.x, e.clientY - d.y) > 6) return
+      if (!d || Math.hypot(e.clientX - d.x, e.clientY - d.y) > 6 || blocked?.()) return
       window.getSelection()?.removeAllRanges()
       onClose()
     },
@@ -644,9 +652,10 @@ function useClickToClose(onClose: () => void) {
 }
 
 /**
- * Boards made of two halves (media.split): stack the left half above the right half when that shows
- * the board noticeably larger than fitting it whole, which is the case on phones and portrait tablets.
- * Rechecked whenever the stage changes size (rotation, the description opening).
+ * Boards made of two halves (media.split): stack the two halves on any screen taller than it is wide
+ * (phones and tablets held upright), as long as that doesn't show the board smaller. On wider spaces,
+ * only when stacking shows it noticeably larger. Rechecked whenever the stage changes size (rotation,
+ * the description opening).
  */
 function useSplitLayout(stage: RefObject<HTMLDivElement | null>, asset: MediaAsset | null) {
   const [split, setSplit] = useState(false)
@@ -658,7 +667,7 @@ function useSplitLayout(stage: RefObject<HTMLDivElement | null>, asset: MediaAss
       if (!cw || !ch) return
       const whole = Math.min(cw / asset.width, ch / asset.height)
       const halves = Math.min(cw / (asset.width / 2), ch / (asset.height * 2))
-      setSplit(halves > whole * 1.15)
+      setSplit(ch > cw ? halves >= whole : halves > whole * 1.15)
     }
     check()
     const ro = new ResizeObserver(check)
@@ -692,26 +701,15 @@ function usePortraitLayout(stage: RefObject<HTMLDivElement | null>, wide: MediaA
   return portrait
 }
 
-/**
- * anchorBottom (tall screens): the artwork sits on the caption bar instead of floating in the middle,
- * so the name and buttons read as its label.
- */
-function ImageStage({
-  media: board,
-  preloaded,
-  onClose,
-  anchorBottom,
-}: {
-  media: ImageMedia
-  preloaded: boolean
-  onClose: () => void
-  anchorBottom: boolean
-}) {
+function ImageStage({ media: board, preloaded, onClose }: { media: ImageMedia; preloaded: boolean; onClose: () => void }) {
   // Decided once, when the viewer opens.
   const [instant] = useState(preloaded)
   const [loaded, setLoaded] = useState(preloaded)
-  const clickToClose = useClickToClose(onClose)
   const stage = useRef<HTMLDivElement>(null)
+  const layer = useRef<HTMLDivElement>(null)
+  const zoom = usePinchZoom(stage, layer)
+  // Zoomed in, a tap doesn't close (it's easy to brush the artwork while looking around it).
+  const clickToClose = useClickToClose(onClose, zoom.isZoomed)
   // The board as shown: its wide layout, or its portrait layout on a tall screen (see above).
   const portrait = usePortraitLayout(stage, getAsset(board.asset), board.portrait ? getAsset(board.portrait) : null)
   const media = portrait && board.portrait ? { ...board, asset: board.portrait } : board
@@ -721,7 +719,7 @@ function ImageStage({
   const ratio = split ? asset.width / 2 / (asset.height * 2) : asset.width / asset.height
   const box = { aspectRatio: `${ratio}`, width: `min(100cqw, 100cqh * ${ratio})` }
   const fade = instant ? '' : `transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`
-  const place = anchorBottom ? 'items-end justify-items-center' : 'place-items-center'
+  const place = 'place-items-center'
   // Each half is a window onto the full image at twice the window's width, stacked in `split` order.
   const [top, bottom] = media.split === 'right-first' ? (['right', 'left'] as const) : (['left', 'right'] as const)
   const halves = (render: (side: 'left' | 'right') => ReactNode) => (
@@ -732,7 +730,8 @@ function ImageStage({
   )
   return (
     // Clicking anywhere on the artwork (or the dark space around it) closes the viewer.
-    <div ref={stage} className="absolute inset-0 cursor-zoom-out" {...clickToClose}>
+    <div ref={stage} className="absolute inset-0 cursor-zoom-out overflow-hidden data-zoomed:cursor-grab" {...clickToClose}>
+      <div ref={layer} className="absolute inset-0 origin-top-left will-change-transform">
       {!loaded && (
         // Same box the real image will fill (exact aspect ratio), so nothing shifts when it arrives.
         <div aria-hidden="true" className={`absolute inset-0 grid overflow-hidden ${place}`}>
@@ -770,11 +769,295 @@ function ImageStage({
           sizes="100vw"
           onLoad={() => setLoaded(true)}
           decoding={instant ? 'sync' : 'async'}
-          className={`absolute inset-0 h-full w-full object-contain ${anchorBottom ? 'object-bottom' : ''} ${fade}`}
+          className={`absolute inset-0 h-full w-full object-contain ${fade}`}
         />
       )}
+      </div>
     </div>
   )
+}
+
+const ZOOM_MAX = 5
+const ZOOM_SETTLE = 'transform 0.25s cubic-bezier(0.22, 1, 0.36, 1)'
+
+/**
+ * Zooms the artwork, and only the artwork: two fingers pinch around the point between them (or a
+ * trackpad pinch around the pointer), while the page, the backdrop and the viewer's buttons stay at
+ * their size. Zoomed in, one finger, a mouse drag or a two-finger trackpad scroll moves around the
+ * artwork, which can't be dragged off past its edges. Pinched smaller than it started, it springs
+ * back. `frame` gets data-zoomed while zoomed in (the viewer's swipe-to-swap and click-to-close
+ * stand down then).
+ */
+function usePinchZoom(frame: RefObject<HTMLElement | null>, layer: RefObject<HTMLElement | null>) {
+  const zoomed = useRef(false)
+  useEffect(() => {
+    const el = frame.current
+    const content = layer.current
+    if (!el || !content) return
+    let s = 1
+    let tx = 0
+    let ty = 0
+    const apply = (settle = false) => {
+      content.style.transition = settle ? ZOOM_SETTLE : ''
+      content.style.transform = s === 1 ? '' : `translate3d(${tx}px, ${ty}px, 0) scale(${s})`
+      zoomed.current = s > 1.001
+      el.toggleAttribute('data-zoomed', zoomed.current)
+    }
+    // Keep the zoomed artwork covering its box: no dragging it off past an edge.
+    const clampPan = () => {
+      const w = el.clientWidth
+      const h = el.clientHeight
+      tx = Math.min(0, Math.max(w - w * s, tx))
+      ty = Math.min(0, Math.max(h - h * s, ty))
+    }
+    /** Scale to `next`, keeping the point (x, y) of the box where it is. */
+    const zoomAt = (x: number, y: number, next: number) => {
+      next = Math.min(ZOOM_MAX, Math.max(0.6, next))
+      tx = x - (x - tx) * (next / s)
+      ty = y - (y - ty) * (next / s)
+      s = next
+    }
+    const settle = () => {
+      if (s <= 1) {
+        s = 1
+        tx = ty = 0
+      } else clampPan()
+      apply(true)
+    }
+    const local = (cx: number, cy: number) => {
+      const r = el.getBoundingClientRect()
+      return [cx - r.left, cy - r.top] as const
+    }
+
+    // Touch: two fingers zoom (and move with the fingers); zoomed in, one finger pans.
+    let pinch: { d: number; x: number; y: number } | null = null
+    let pan: { x: number; y: number } | null = null
+    const spread = (t: TouchList) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)
+    const middle = (t: TouchList) => local((t[0].clientX + t[1].clientX) / 2, (t[0].clientY + t[1].clientY) / 2)
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        const [x, y] = middle(e.touches)
+        pinch = { d: spread(e.touches), x, y }
+        pan = null
+        e.stopPropagation()
+      } else if (e.touches.length === 1 && zoomed.current) {
+        pan = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+        e.stopPropagation()
+      }
+    }
+    const onTouchMove = (e: TouchEvent) => {
+      if (pinch && e.touches.length >= 2) {
+        e.preventDefault()
+        e.stopPropagation()
+        const d = spread(e.touches)
+        const [x, y] = middle(e.touches)
+        tx += x - pinch.x
+        ty += y - pinch.y
+        zoomAt(x, y, (s * d) / pinch.d)
+        pinch = { d, x, y }
+        apply()
+      } else if (pan && e.touches.length === 1) {
+        e.preventDefault()
+        e.stopPropagation()
+        tx += e.touches[0].clientX - pan.x
+        ty += e.touches[0].clientY - pan.y
+        pan = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+        clampPan()
+        apply()
+      }
+    }
+    const onTouchEnd = (e: TouchEvent) => {
+      if (pinch && e.touches.length < 2) {
+        pinch = null
+        settle()
+        // One finger still down after a pinch: carry on panning with it.
+        pan = e.touches.length === 1 && zoomed.current ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null
+        e.stopPropagation()
+      } else if (pan && e.touches.length === 0) {
+        pan = null
+        e.stopPropagation()
+      }
+    }
+
+    // Trackpads: a pinch arrives as ctrl + wheel (Chrome, Firefox); zoomed in, scrolling pans.
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) {
+        e.preventDefault()
+        e.stopPropagation()
+        const [x, y] = local(e.clientX, e.clientY)
+        zoomAt(x, y, s * Math.exp(-e.deltaY * 0.01))
+        if (s <= 1) {
+          s = 1
+          tx = ty = 0
+        } else clampPan()
+        apply()
+      } else if (zoomed.current) {
+        e.preventDefault()
+        e.stopPropagation()
+        tx -= e.deltaX
+        ty -= e.deltaY
+        clampPan()
+        apply()
+      }
+    }
+    // Safari on a Mac pinches with its own gesture events (on iPhones and iPads touch handles it).
+    let gestureFrom = 1
+    const onGestureStart = (e: Event) => {
+      e.preventDefault()
+      gestureFrom = s
+    }
+    const onGestureChange = (e: Event) => {
+      e.preventDefault()
+      if (pinch) return
+      const g = e as Event & { scale: number; clientX: number; clientY: number }
+      const [x, y] = local(g.clientX, g.clientY)
+      zoomAt(x, y, gestureFrom * g.scale)
+      apply()
+    }
+    const onGestureEnd = (e: Event) => {
+      e.preventDefault()
+      if (!pinch) settle()
+    }
+
+    // Mouse: zoomed in (by a trackpad pinch), drag to look around.
+    let drag: { x: number; y: number } | null = null
+    const onPointerDown = (e: globalThis.PointerEvent) => {
+      if (e.pointerType === 'touch' || !zoomed.current || e.button !== 0) return
+      drag = { x: e.clientX, y: e.clientY }
+      el.setPointerCapture(e.pointerId)
+    }
+    const onPointerMove = (e: globalThis.PointerEvent) => {
+      if (!drag) return
+      tx += e.clientX - drag.x
+      ty += e.clientY - drag.y
+      drag = { x: e.clientX, y: e.clientY }
+      clampPan()
+      apply()
+    }
+    const onPointerUp = () => {
+      drag = null
+    }
+
+    const opts = { passive: false } as const
+    el.addEventListener('touchstart', onTouchStart, opts)
+    el.addEventListener('touchmove', onTouchMove, opts)
+    el.addEventListener('touchend', onTouchEnd)
+    el.addEventListener('touchcancel', onTouchEnd)
+    el.addEventListener('wheel', onWheel, opts)
+    el.addEventListener('gesturestart', onGestureStart, opts)
+    el.addEventListener('gesturechange', onGestureChange, opts)
+    el.addEventListener('gestureend', onGestureEnd, opts)
+    el.addEventListener('pointerdown', onPointerDown)
+    el.addEventListener('pointermove', onPointerMove)
+    el.addEventListener('pointerup', onPointerUp)
+    el.addEventListener('pointercancel', onPointerUp)
+    return () => {
+      el.removeEventListener('touchstart', onTouchStart)
+      el.removeEventListener('touchmove', onTouchMove)
+      el.removeEventListener('touchend', onTouchEnd)
+      el.removeEventListener('touchcancel', onTouchEnd)
+      el.removeEventListener('wheel', onWheel)
+      el.removeEventListener('gesturestart', onGestureStart)
+      el.removeEventListener('gesturechange', onGestureChange)
+      el.removeEventListener('gestureend', onGestureEnd)
+      el.removeEventListener('pointerdown', onPointerDown)
+      el.removeEventListener('pointermove', onPointerMove)
+      el.removeEventListener('pointerup', onPointerUp)
+      el.removeEventListener('pointercancel', onPointerUp)
+    }
+  }, [frame, layer])
+  return { isZoomed: () => zoomed.current }
+}
+
+/**
+ * Zoom for a document's pages (the resume, the AFC presentation): pinching makes the column of pages
+ * wider (up to ZOOM_MAX times), keeping the point between the fingers in place, and the pages then
+ * scroll both ways on their own. Pinched back past their normal width, they settle at it.
+ */
+function useDocumentZoom(scroller: RefObject<HTMLElement | null>, column: RefObject<HTMLElement | null>, baseWidth: string) {
+  useEffect(() => {
+    const box = scroller.current
+    const col = column.current
+    if (!box || !col) return
+    let z = 1
+    const setZoom = (next: number, x: number, y: number) => {
+      next = Math.min(ZOOM_MAX, Math.max(0.7, next))
+      const before = col.getBoundingClientRect()
+      const r = box.getBoundingClientRect()
+      // The point under (x, y), as a fraction of the column
+      const fx = (x + r.left - before.left) / before.width
+      const fy = (y + r.top - before.top) / before.height
+      z = next
+      col.style.width = z === 1 ? '' : `calc(${baseWidth} * ${z})`
+      col.style.maxWidth = z === 1 ? '' : 'none'
+      col.style.marginInline = z > 1 ? '0' : ''
+      const after = col.getBoundingClientRect()
+      box.scrollLeft += after.left + fx * after.width - (r.left + x)
+      box.scrollTop += after.top + fy * after.height - (r.top + y)
+    }
+    const local = (cx: number, cy: number) => {
+      const r = box.getBoundingClientRect()
+      return [cx - r.left, cy - r.top] as const
+    }
+    let pinch: { d: number } | null = null
+    const spread = (t: TouchList) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY)
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 2) return
+      pinch = { d: spread(e.touches) }
+      e.stopPropagation()
+    }
+    const onTouchMove = (e: TouchEvent) => {
+      if (!pinch || e.touches.length < 2) return
+      e.preventDefault()
+      e.stopPropagation()
+      const d = spread(e.touches)
+      const [x, y] = local((e.touches[0].clientX + e.touches[1].clientX) / 2, (e.touches[0].clientY + e.touches[1].clientY) / 2)
+      setZoom((z * d) / pinch.d, x, y)
+      pinch = { d }
+    }
+    const onTouchEnd = (e: TouchEvent) => {
+      if (!pinch || e.touches.length >= 2) return
+      pinch = null
+      if (z < 1) setZoom(1, box.clientWidth / 2, box.clientHeight / 2)
+      e.stopPropagation()
+    }
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey) return
+      e.preventDefault()
+      e.stopPropagation()
+      const [x, y] = local(e.clientX, e.clientY)
+      setZoom(Math.max(1, z * Math.exp(-e.deltaY * 0.01)), x, y)
+    }
+    let gestureFrom = 1
+    const onGestureStart = (e: Event) => {
+      e.preventDefault()
+      gestureFrom = z
+    }
+    const onGestureChange = (e: Event) => {
+      e.preventDefault()
+      if (pinch) return
+      const g = e as Event & { scale: number; clientX: number; clientY: number }
+      const [x, y] = local(g.clientX, g.clientY)
+      setZoom(Math.max(1, gestureFrom * g.scale), x, y)
+    }
+    const opts = { passive: false } as const
+    box.addEventListener('touchstart', onTouchStart, opts)
+    box.addEventListener('touchmove', onTouchMove, opts)
+    box.addEventListener('touchend', onTouchEnd)
+    box.addEventListener('touchcancel', onTouchEnd)
+    box.addEventListener('wheel', onWheel, opts)
+    box.addEventListener('gesturestart', onGestureStart, opts)
+    box.addEventListener('gesturechange', onGestureChange, opts)
+    return () => {
+      box.removeEventListener('touchstart', onTouchStart)
+      box.removeEventListener('touchmove', onTouchMove)
+      box.removeEventListener('touchend', onTouchEnd)
+      box.removeEventListener('touchcancel', onTouchEnd)
+      box.removeEventListener('wheel', onWheel)
+      box.removeEventListener('gesturestart', onGestureStart)
+      box.removeEventListener('gesturechange', onGestureChange)
+    }
+  }, [scroller, column, baseWidth])
 }
 
 /**
@@ -802,6 +1085,8 @@ function DocumentStage({
   const aspect = first.width / first.height
   const width = aspect >= 1 ? `min(90cqw, (100cqh - 120px) * ${aspect})` : 'min(90cqw, 1000px)'
   const n = media.pages.length
+  const column = useRef<HTMLDivElement>(null)
+  useDocumentZoom(scroller, column, width)
   return (
     <div
       ref={scroller}
@@ -809,11 +1094,12 @@ function DocumentStage({
       tabIndex={-1}
       aria-label={media.alt}
       role="region"
-      className="absolute inset-0 cursor-zoom-out overflow-y-auto overscroll-contain outline-none"
+      className="absolute inset-0 cursor-zoom-out overflow-auto overscroll-contain outline-none"
       onScroll={onScroll}
       {...clickToClose}
     >
       <div
+        ref={column}
         className={`mx-auto flex flex-col gap-6 pb-10 ${clearTop ? 'pt-[76px]' : 'pt-2'}`}
         style={{ width }}
       >
@@ -872,14 +1158,11 @@ function scrollByKey(el: HTMLElement, key: string, shift: boolean, reduce: boole
   }
 }
 
-function VideoStage({ media, onBackdrop, anchorBottom }: { media: YouTubeMedia; onBackdrop: () => void; anchorBottom: boolean }) {
+function VideoStage({ media, onBackdrop }: { media: YouTubeMedia; onBackdrop: () => void }) {
   const clickToClose = useClickToClose(onBackdrop)
   return (
     // Clicking anywhere around the video closes, as on the original site.
-    <div
-      className={`absolute inset-0 grid cursor-zoom-out ${anchorBottom ? 'items-end justify-items-center' : 'place-items-center'}`}
-      {...clickToClose}
-    >
+    <div className="absolute inset-0 grid cursor-zoom-out place-items-center" {...clickToClose}>
       <div
         className="aspect-video w-[min(90cqw,calc((100cqh-120px)*16/9))]"
         onClick={(e) => e.stopPropagation()}
@@ -975,27 +1258,36 @@ function DescriptionSheet({
           : 'inset-x-0 max-h-[40dvh] border-t-2 border-sand/25 px-6 pt-4 pb-[max(20px,env(safe-area-inset-bottom))] md:px-10'
       }`}
     >
+      {/* Same hierarchy as the resume: the name in DDC Hardware, small tracked DDC labels, and the
+          reading text in League Spartan. */}
       <div className="cursor-text select-text">
-        {side && <h2 className="text-[24px] leading-[1.25] wide:text-[30px]">{project.title}</h2>}
-        {isVideo ? (
-          <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[14px] leading-[1.5] wide:text-[16px]">
-            <dt className="opacity-70">Duties</dt>
-            <dd>{project.duties}</dd>
-            <dt className="opacity-70">Crew size</dt>
-            <dd>{project.crewSize}</dd>
-            <dt className="opacity-70">Timeline</dt>
-            <dd>{project.timeline}</dd>
+        {side && <h2 className="text-[24px] leading-[1.2] tracking-[0.03em] wide:text-[30px]">{project.title}</h2>}
+        {side && !isVideo && project.discipline && <p className={`mt-1.5 ${DESC_LABEL}`}>{project.discipline}</p>}
+        {side && <div aria-hidden="true" className="mt-3 border-t-2 border-sand/80" />}
+        {isVideo && (
+          <dl className="mt-3 grid grid-cols-[auto_1fr] items-baseline gap-x-4 gap-y-1.5">
+            <dt className={DESC_LABEL}>Duties</dt>
+            <dd className={DESC_DETAIL}>{project.duties}</dd>
+            <dt className={DESC_LABEL}>Crew size</dt>
+            <dd className={DESC_DETAIL}>{project.crewSize}</dd>
+            <dt className={DESC_LABEL}>Timeline</dt>
+            <dd className={DESC_DETAIL}>{project.timeline}</dd>
           </dl>
-        ) : (
-          side && <p className="mt-1 text-[14px] tracking-[0.06em] uppercase opacity-70 wide:text-[16px]">{project.discipline}</p>
         )}
         {project.description && (
-          <p className="mt-4 max-w-[60ch] text-[16px] leading-[1.6] wide:text-[18px]">{project.description}</p>
+          <p className="mt-4 max-w-[62ch] font-text text-[17px] leading-[1.55] text-pretty first:mt-0 wide:text-[19px]">
+            {project.description}
+          </p>
         )}
       </div>
     </motion.section>
   )
 }
+
+/** The description's small labels (discipline, Duties...), like the resume's section labels. */
+const DESC_LABEL = 'font-ddc text-[12px] leading-tight tracking-[0.14em] uppercase opacity-65 wide:text-[13px]'
+/** The video details next to those labels. */
+const DESC_DETAIL = 'font-text text-[15px] leading-[1.45] wide:text-[16px]'
 
 /** DESCRIPTION's open / closed mark: a plus whose upright stroke turns flat to make a minus. */
 function PlusMinus({ open }: { open: boolean }) {

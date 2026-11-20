@@ -201,7 +201,7 @@ function AboutDesktop() {
       <div className="h-screen w-full overflow-clip" style={{ paddingLeft: dims.railW }}>
         <motion.div style={{ x }} onFocusCapture={onFocusCapture} className="flex h-full w-max will-change-transform">
           <section data-slide="0" aria-label="About" className="h-screen flex-none" style={{ width: dims.slideW }}>
-            <AboutIntro onResume={() => goTo(1)} />
+            <AboutIntro />
           </section>
           <section data-slide="1" aria-label="Resume" className="h-screen flex-none" style={{ width: dims.slideW }}>
             <ResumeBoard />
@@ -222,7 +222,16 @@ function AboutDesktop() {
             <span className="scroll-arrow absolute top-[10px] left-[30px] h-0 w-0 border-y-[15px] border-l-[15px] border-y-transparent border-l-sand" />
           </span>
         </motion.button>
-        <SlidePager slide={slide} onGo={goTo} />
+        {/* Not on the about slide (the mockup keeps it clean); on the resume it's the way back. */}
+        <motion.div
+          initial={false}
+          animate={{ opacity: slide === 1 ? 1 : 0 }}
+          transition={{ duration: 0.2 }}
+          className={slide === 1 ? '' : 'pointer-events-none'}
+          inert={slide !== 1}
+        >
+          <SlidePager slide={slide} onGo={goTo} />
+        </motion.div>
       </div>
     </main>
   )
@@ -253,15 +262,14 @@ function SlidePager({ slide, onGo }: { slide: number; onGo: (i: number) => void 
 /** Phones and portrait screens: About, then the whole resume, down one page. */
 function AboutMobile() {
   const resumeRef = useRef<HTMLDivElement>(null)
-  const reduce = useReducedMotion()
   useEffect(() => {
     if (startsOnResume()) resumeRef.current?.scrollIntoView({ block: 'start' })
   }, [])
   return (
     <main className="relative">
       <MobileContactBar workHref={withBase('/')} />
-      <section aria-label="About" className="px-[6%] pt-14 pb-12">
-        <AboutIntro stacked onResume={() => resumeRef.current?.scrollIntoView({ block: 'start', behavior: reduce ? 'instant' : 'smooth' })} />
+      <section aria-label="About" className="px-[6%] pt-12 pb-12">
+        <AboutIntro stacked />
       </section>
       <section id="resume" ref={resumeRef} aria-label="Resume" className="bg-sand px-[6%] pt-10 pb-14 text-ink">
         <ResumeDocument />

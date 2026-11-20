@@ -1,11 +1,14 @@
 {
-  "_note": "PLACEHOLDER copy for the About slide (/about/). The headline and blurb are drafts built from the resume summary; replace them with your own words. Put the stylized portrait in public/about/ and set \"photo\" to its path (e.g. \"/about/portrait.png\"); until then the page shows a placeholder frame.",
-  "eyebrow": "About",
-  "headline": "Designer. Videographer. Navy veteran.",
-  "blurb": [
-    "For 14 years I've made brands, video, interfaces, and live events, from laying out All Hands, the Navy's flagship magazine, to leading in-house creative at a venture-backed defense tech company.",
-    "I like working next to engineers and specialists until I understand the complicated thing, then making it clear enough that anyone can follow."
+  "_note": "The About slide (/about/). \"photo\" is a key in media.json: add or replace the cutout with `npm run add-media -- <image> about/headshot.png` (a transparent PNG; the page adds the shadow). \"letter\" is the text in the box, one entry per paragraph.",
+  "headline": "Hello friend.",
+  "letter": [
+    "Thank you for taking the time to view my portfolio. It means a lot to me that you're here.",
+    "My name is Patrick, and for 14-years I've had the opportunity to lead brands for rapidly growing tech startups, design identities for dozens of small businesses, tell the stories of inspirational people, helped a major AI model become more inclusive, and hung from a belt off the side of a helicopter over the Mariana Trench.",
+    "I enjoy working side-by-side with engineers and leadership to break down complex topics and present them in a way anyone can understand.",
+    "If something you see here inspires you, please reach out."
   ],
-  "photo": null,
-  "photoAlt": "Portrait of Patrick Enright"
+  "signature": "Patrick Enright",
+  "signoff": "Have a wonderful day",
+  "photo": "about/headshot.png",
+  "photoAlt": "Patrick Enright, smiling, in a striped olive T-shirt"
 }

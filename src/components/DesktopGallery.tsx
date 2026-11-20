@@ -49,6 +49,10 @@ const viewWidth = () => document.documentElement.clientWidth
 export function DesktopGallery({ category, onCategory, onOpen, startAtWork, startAtPanel }: GalleryProps) {
   const frame = useRef<HTMLDivElement>(null)
   const slot = useRef<HTMLDivElement>(null)
+  // Each side's row of panels. The strip is as long as the side that's showing, so DESIGN and VIDEO
+  // can each have any number of projects without the shorter side ending in empty space.
+  const rows = useRef<Record<Category, HTMLElement | null>>({ design: null, video: null })
+  const categoryRef = useRef(category)
   const rail = useRef<HTMLElement | null>(null)
   const setRail = useCallback((el: HTMLElement | null) => {
     rail.current = el
@@ -226,27 +230,36 @@ export function DesktopGallery({ category, onCategory, onOpen, startAtWork, star
     }
   }, [goTo, ratio, x])
 
+  /** The strip's measurements with `cat` showing. */
+  const measureFor = useCallback((cat: Category): Dims | null => {
+    const row = rows.current[cat]
+    if (!frame.current || !slot.current || !row) return null
+    const vw = viewWidth()
+    const navLeft = slot.current.offsetLeft
+    const navW = slot.current.offsetWidth
+    // hero + nav column + this side's panels (the other side's row may be longer or shorter)
+    const travel = Math.max(0, navLeft + navW + row.offsetWidth - vw)
+    return { travel, height: Math.max(travel - vw, window.innerHeight * 2), navLeft, navW }
+  }, [])
+
   useLayoutEffect(() => {
     const measure = () => {
-      if (!frame.current || !slot.current) return
-      const vw = viewWidth()
-      const travel = frame.current.getBoundingClientRect().width - vw
-      setDims({
-        travel,
-        height: Math.max(travel - vw, window.innerHeight * 2),
-        navLeft: slot.current.offsetLeft,
-        navW: slot.current.offsetWidth,
-      })
+      const next = measureFor(categoryRef.current)
+      if (next) {
+        dimsRef.current = next
+        setDims(next)
+      }
     }
     measure()
     const ro = new ResizeObserver(measure)
     ro.observe(frame.current!)
+    for (const row of Object.values(rows.current)) if (row) ro.observe(row)
     window.addEventListener('resize', measure)
     return () => {
       ro.disconnect()
       window.removeEventListener('resize', measure)
     }
-  }, [])
+  }, [measureFor])
 
   /*
     Switching DESIGN / VIDEO starts the new side at its beginning: the full nav column at the left
@@ -264,6 +277,7 @@ export function DesktopGallery({ category, onCategory, onOpen, startAtWork, star
   useLayoutEffect(() => {
     const prev = prevCategory.current
     prevCategory.current = category
+    categoryRef.current = category
     if (prev === category || dimsRef.current.travel <= 0) return
     const shift = (c: Category) => (c === 'design' ? shiftDesign : shiftVideo)
     const incoming = shift(category)
@@ -271,18 +285,29 @@ export function DesktopGallery({ category, onCategory, onOpen, startAtWork, star
     window.clearTimeout(settle.current)
     // Switched back mid-slide: glide the returning side home along with the slide.
     if (incoming.get() !== 0) animate(incoming, 0, { duration: reduce ? 0 : 0.25, ease: 'easeInOut' })
+    const offset = -x.get()
+    // The new side has its own length: measure it now, before working out any scroll position, so
+    // the page height and the scroll-to-strip mapping are the new side's from this frame on.
+    const next = measureFor(category)
+    if (next) {
+      dimsRef.current = next
+      setDims(next)
+    }
     const { navLeft, travel, height } = dimsRef.current
     const start = navLeft
-    const offset = -x.get()
+    const range = height - window.innerHeight
     if (offset > start + 1) {
       window.scrollTo({ top: start * ratio(), behavior: 'instant' })
-      const range = height - window.innerHeight
       const landed = range > 0 ? (window.scrollY / range) * travel : start
       outgoing.set(outgoing.get() - (offset - landed))
       place(landed)
+    } else {
+      // Near the start nothing moves: keep the strip exactly where it is under the new mapping.
+      window.scrollTo({ top: offset * ratio(), behavior: 'instant' })
+      place(offset)
     }
     settle.current = window.setTimeout(() => outgoing.set(0), reduce ? 0 : 300)
-  }, [category, place, ratio, reduce, shiftDesign, shiftVideo, x])
+  }, [category, measureFor, place, ratio, reduce, shiftDesign, shiftVideo, x])
   useEffect(() => () => window.clearTimeout(settle.current), [])
 
   /** Scroll hint: glide to where the nav column reaches the left edge. */
@@ -341,11 +366,14 @@ export function DesktopGallery({ category, onCategory, onOpen, startAtWork, star
               initial={false}
               animate={{ y: category === 'video' ? '-100vh' : '0vh' }}
               transition={{ duration: reduce ? 0 : 0.25, ease: 'easeInOut' }}
-              className="flex flex-col"
+              className="flex flex-col items-start"
             >
               {(['design', 'video'] as const).map((cat) => (
                 <motion.section
                   key={cat}
+                  ref={(el: HTMLElement | null) => {
+                    rows.current[cat] = el
+                  }}
                   aria-label={cat === 'design' ? 'Design work' : 'Video work'}
                   aria-hidden={cat !== category}
                   inert={cat !== category}

@@ -463,5 +463,13 @@
     "webp": "/media/design/full/candescent_full-vertical-1125.webp 1125w",
     "blur": "data:image/webp;base64,UklGRsYAAABXRUJQVlA4ILoAAABwBACdASoQABsAPu1iqU2ppaOiMAgBMB2JYgAOcANhpC7s2C6UaXvoxNmQAAD+1iTUVkcHg8l025pnFEC8qXyXMj4ILmnXe7htU3qLWC0VQUXtjZjiThHFqhK3lTqM3nmJibhLp7mYPuNX6i/XxIy2AH1BnEc2pjDZj3gZSQGFi40+h3lFTrSUHU067m57VBUhk6t/PZhk0WCbzDMzhOcUy0rsmIJp7ufsSOjkbrFpvG4QZVagaBQeAAA=",
     "fallback": "/media/design/full/candescent_full-vertical-1125.webp"
+  },
+  "about/headshot.png": {
+    "width": 1000,
+    "height": 882,
+    "avif": "/media/about/headshot-1000.avif 1000w",
+    "webp": "/media/about/headshot-1000.webp 1000w",
+    "blur": "data:image/webp;base64,UklGRjYBAABXRUJQVlA4WAoAAAAQAAAADwAADQAAQUxQSJsAAAABgFtrmzLlnfkXd3cLHRogpgcnhUY4ZBTA2ZAKtAIacCdzhwh25nuQ2R4iYgL036tjtE5eaaeKtU9uluVSXqsEI0zL/3OqvibwzUaxpicM43JQPlG2T4QCC8ol/B4RI0zKS1KmJSKBXXmXannAIieLvXJS5jX1ioHxNCHn1ZMvYED8YkWZZu+Jxv/ApsryWDCSkWO/TiFS1HgdAABWUDggdAAAAFACAJ0BKhAADgADgFoloAJ0Bi1WUpolK5ptaAD+7O2gCDWq0HxM1x4b0JRtKE6yIz6zH9vDBeDNhCZFvm2Dx1qFRxLUcjhOgmfDDndt2EZT+BOshZd5a5viKcFRU7mXduxRWgWJx2UeL1NosZgbR5tTgAAA",
+    "fallback": "/media/about/headshot-1000.webp"
   }
 }

@@ -1,9 +1,8 @@
-import { animate, motion, useMotionValue, useReducedMotion } from 'motion/react'
-import { useEffect, useLayoutEffect, useRef, type CSSProperties, type MouseEvent } from 'react'
+import { motion, useMotionValue, useReducedMotion } from 'motion/react'
+import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from 'react'
 import { byCategory, withBase, type Category, type Project } from '../content'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { openContact } from '../lib/contact'
-import { POPUP_BUTTON, POPUP_BUTTON_FILLED, POPUP_BUTTON_OUTLINED } from '../lib/popup'
 import { Hero } from './Hero'
 import { MobileContactBar, MobileNavRow } from './Nav'
 import { ProjectPanel } from './ProjectPanel'
@@ -29,19 +28,32 @@ function useColumns() {
   return long ? 3 : landscape || tablet ? 2 : 1
 }
 
-const other = (c: Category): Category => (c === 'design' ? 'video' : 'design')
-
 /**
  * Phones, tablets, and any screen that isn't wide enough for the desktop strip: a normal vertical page.
  * Bar with CONTACT and RESUME, hero, the DESIGN / VIDEO row (it sticks to the top once scrolled to),
- * then the work as square tiles. Switching category slides the two sides sideways; if the page was
- * scrolled into the work, the new side starts at its first project (like the desktop strip).
+ * the work as square tiles, then a ribbon with ABOUT and CONTACT. Switching category slides the two
+ * sides sideways; if the page was scrolled into the work, the new side starts at its first project
+ * (like the desktop strip). Each side is only as tall as its own tiles, so the page ends right after
+ * the side that's showing, however many projects each side has.
  */
 export function MobileGallery({ category, onCategory, onOpen, startAtWork, startAtPanel }: GalleryProps) {
   const reduce = useReducedMotion()
   const cols = useColumns()
   const work = useRef<HTMLDivElement>(null)
   const columns = useRef<HTMLDivElement>(null)
+
+  // Each side's height. The two sides sit side by side and slide, so the box holding them takes the
+  // showing side's height (not the taller one's): no empty space under the shorter side.
+  const sideRefs = useRef<Record<Category, HTMLElement | null>>({ design: null, video: null })
+  const [heights, setHeights] = useState<Record<Category, number>>({ design: 0, video: 0 })
+  useLayoutEffect(() => {
+    const measure = () =>
+      setHeights({ design: sideRefs.current.design?.offsetHeight ?? 0, video: sideRefs.current.video?.offsetHeight ?? 0 })
+    measure()
+    const ro = new ResizeObserver(measure)
+    for (const el of Object.values(sideRefs.current)) if (el) ro.observe(el)
+    return () => ro.disconnect()
+  }, [cols])
 
   useEffect(() => {
     const panel = startAtPanel && document.querySelector(`.panel[data-project="${CSS.escape(startAtPanel)}"]`)
@@ -88,18 +100,6 @@ export function MobileGallery({ category, onCategory, onOpen, startAtWork, start
     window.scrollTo({ top: workTop(), behavior: reduce ? 'instant' : 'smooth' })
   }
 
-  /** From an end card: show the other side, starting at its first project. */
-  const seeOther = (c: Category) => {
-    onCategory(other(c))
-    if (window.scrollY < workTop() - 1) {
-      animate(window.scrollY, workTop(), {
-        duration: reduce ? 0 : 0.4,
-        ease: [0.22, 1, 0.36, 1],
-        onUpdate: (v) => window.scrollTo({ top: v, behavior: 'instant' }),
-      })
-    }
-  }
-
   return (
     <main className="mobile-page relative">
       <a
@@ -113,65 +113,51 @@ export function MobileGallery({ category, onCategory, onOpen, startAtWork, start
       <Hero className="mobile-hero w-full" />
       <MobileNavRow category={category} onCategory={onCategory} />
       <div ref={work} aria-hidden="true" className="scroll-mt-[var(--mnav-h)]" />
-      <div ref={columns} className="overflow-hidden">
+      <div ref={columns} className="overflow-hidden" style={{ height: heights[category] || undefined }}>
         <motion.div
           initial={false}
           animate={{ x: category === 'video' ? '-50%' : '0%' }}
           transition={{ duration: reduce ? 0 : 0.25, ease: 'easeInOut' }}
           className="flex w-[200%] items-start"
         >
-          {(['design', 'video'] as const).map((cat) => {
-            const items = byCategory[cat]
-            // The end card fills out the last row (or takes a row of its own when the tiles come out even).
-            const span = cols - (items.length % cols) || cols
-            return (
-              <motion.section
-                key={cat}
-                aria-label={cat === 'design' ? 'Design work' : 'Video work'}
-                aria-hidden={cat !== category}
-                inert={cat !== category}
-                style={{ y: cat === 'design' ? shiftDesign : shiftVideo, gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-                className="grid w-1/2"
-              >
-                {items.map((p) => (
-                  <ProjectPanel key={p.id} project={p} onOpen={onOpen} className="aspect-square w-full" />
-                ))}
-                <EndCard
-                  category={cat}
-                  style={{ gridColumn: `span ${span}`, aspectRatio: cols === 1 ? '4 / 3' : `${span} / 1` }}
-                  onOther={() => seeOther(cat)}
-                />
-              </motion.section>
-            )
-          })}
+          {(['design', 'video'] as const).map((cat) => (
+            <motion.section
+              key={cat}
+              ref={(el: HTMLElement | null) => {
+                sideRefs.current[cat] = el
+              }}
+              aria-label={cat === 'design' ? 'Design work' : 'Video work'}
+              aria-hidden={cat !== category}
+              inert={cat !== category}
+              style={{ y: cat === 'design' ? shiftDesign : shiftVideo, gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+              className="grid w-1/2"
+            >
+              {byCategory[cat].map((p) => (
+                <ProjectPanel key={p.id} project={p} onOpen={onOpen} className="aspect-square w-full" />
+              ))}
+            </motion.section>
+          ))}
         </motion.div>
       </div>
+      <BottomRibbon />
     </main>
   )
 }
 
-/**
- * After the last project: where to go next. The other side of the work, the about / resume page,
- * and the contact popup. It fills out the grid's last row, so the work never ends on an empty square.
- */
-function EndCard({ category, style, onOther }: { category: Category; style: CSSProperties; onOther: () => void }) {
-  const button = `${POPUP_BUTTON} px-5 whitespace-nowrap`
+/** After the work: the about / resume page and the contact popup, in a sand ribbon like the DESIGN / VIDEO row. */
+function BottomRibbon() {
+  const button =
+    'group grid h-11 cursor-pointer place-items-center outline-none'
+  const face =
+    'block h-10 border-2 border-ink px-6 font-ddc text-[16px] leading-[36px] tracking-[0.08em] text-ink uppercase transition-colors group-hover:bg-ink group-hover:text-sand group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-ink'
   return (
-    <div style={style} className="flex flex-col items-center justify-center gap-5 bg-ink px-6 py-8 text-center font-ddc text-sand">
-      <p className="text-[clamp(18px,4.5vw,26px)] leading-tight">
-        That's the {category} work.
-      </p>
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        <button type="button" onClick={onOther} className="group cursor-pointer outline-none">
-          <span className={`${button} ${POPUP_BUTTON_FILLED}`}>See {other(category)} work</span>
-        </button>
-        <a href={withBase('/about/')} className="group outline-none">
-          <span className={`${button} ${POPUP_BUTTON_OUTLINED}`}>About me</span>
-        </a>
-        <button type="button" aria-haspopup="dialog" onClick={openContact} className="group cursor-pointer outline-none">
-          <span className={`${button} ${POPUP_BUTTON_OUTLINED}`}>Contact</span>
-        </button>
-      </div>
-    </div>
+    <nav aria-label="More" className="flex items-center justify-center gap-4 bg-sand px-4 py-4">
+      <a href={withBase('/about/')} className={button}>
+        <span className={face}>About</span>
+      </a>
+      <button type="button" aria-haspopup="dialog" onClick={openContact} className={button}>
+        <span className={face}>Contact</span>
+      </button>
+    </nav>
   )
 }

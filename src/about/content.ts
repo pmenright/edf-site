@@ -66,11 +66,13 @@ export interface Resume {
 }
 
 export interface About {
-  eyebrow: string
   headline: string
-  blurb: string[]
-  /** Path of the stylized portrait (in public/), or null for the placeholder. */
-  photo: string | null
+  /** The letter in the box, one entry per paragraph. */
+  letter: string[]
+  signature: string
+  signoff: string
+  /** The cutout portrait: a key in media.json (transparent PNG). */
+  photo: string
   photoAlt: string
 }
 

@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { buttonArt, type ButtonArtName } from '../content/buttonArt'
 import { artTiming, useArtHover } from '../lib/buttonArt'
 
@@ -64,16 +64,38 @@ export function ArtButton({ name, label, active, onClick, href, popup = false, b
     ref.current = el
   }, [])
   const wasActive = useRef(active)
+  // The selected frame shows once the press has played (see below).
+  const [shownActive, setShownActive] = useState(active)
+  const pressTimer = useRef<number | undefined>(undefined)
+  useEffect(() => () => window.clearTimeout(pressTimer.current), [])
 
   // Runs before paint, so the active frame is replaced by the end frame with no flash of the start.
   useLayoutEffect(() => {
     const el = ref.current
     if (el && wasActive.current && !active) {
+      window.clearTimeout(pressTimer.current)
       el.style.transition = 'none'
       el.style.setProperty('--art-frame', getComputedStyle(el).getPropertyValue('--art-last'))
       void getComputedStyle(el).getPropertyValue('--art-frame') // commit the end frame first
       el.style.transition = ''
       el.style.removeProperty('--art-frame') // ...then run back from it
+      setShownActive(false)
+    } else if (el && !wasActive.current && active) {
+      // Selected without a hover first (a tap on a touch screen): play the press through to its end
+      // frame, then show the selected frame, instead of jumping straight to it.
+      const style = getComputedStyle(el)
+      const frame = Number(style.getPropertyValue('--art-frame'))
+      const last = Number(style.getPropertyValue('--art-last'))
+      const seconds = parseFloat(style.transitionDuration) || 0
+      if (!(frame < last) || seconds === 0) {
+        setShownActive(true)
+      } else {
+        el.style.setProperty('--art-frame', String(last))
+        pressTimer.current = window.setTimeout(() => {
+          setShownActive(true)
+          el.style.removeProperty('--art-frame')
+        }, ((last - frame) / last) * seconds * 1000)
+      }
     }
     wasActive.current = active
   }, [active])
@@ -81,7 +103,7 @@ export function ArtButton({ name, label, active, onClick, href, popup = false, b
   const art = (
     <>
       <span className={`flex items-center justify-center ${boxClassName}`}>
-        <ButtonArt name={name} active={active} className={artClassName} />
+        <ButtonArt name={name} active={shownActive} className={artClassName} />
       </span>
       {children}
     </>
