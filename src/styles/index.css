@@ -26,6 +26,8 @@
   --color-amber: #fdba5a;
 
   --font-ddc: "DDC Hardware", "Arial Narrow", sans-serif;
+  /* Running text on the about / resume page (long reading in DDC Hardware's caps is hard work). */
+  --font-text: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
   /* Webflow's thumbnail color-reveal curve */
   --ease-reveal: cubic-bezier(0.55, 0.055, 0.675, 0.19);
@@ -37,6 +39,9 @@
   would be wider than the screen. Keep in sync with STRIP_QUERY in src/hooks/useMediaQuery.ts.
 */
 @custom-variant strip (@media (min-width: 992px) and (min-aspect-ratio: 5/4));
+
+/* Short screens (phones on their side): tighter bars so the work keeps most of the height. */
+@custom-variant short (@media (max-height: 500px));
 
 /* Which of a button's hover frames is showing (see .art-btn). A whole number, so any point in a
    transition lands on a whole frame. */
@@ -75,6 +80,36 @@
     .panel:focus-visible .thumb {
       filter: saturate(100%);
     }
+  }
+
+  /*
+    Phones and tablets (MobileGallery.tsx). --mnav-h is the DESIGN / VIDEO row's height; the hero
+    fills the rest of the first screen, so the row sits at the bottom of it (and then sticks to the
+    top while scrolling through the work). svh: the screen height with the browser's toolbars
+    showing, so the row is never hidden behind them on the first screen.
+  */
+  .mobile-page {
+    --mnav-h: 50px;
+  }
+  @media (min-width: 480px) {
+    .mobile-page {
+      --mnav-h: 56px;
+    }
+  }
+  @media (min-width: 768px) {
+    .mobile-page {
+      --mnav-h: 64px;
+    }
+  }
+  @media (max-height: 500px) {
+    .mobile-page {
+      --mnav-h: 50px;
+    }
+  }
+  .mobile-hero {
+    height: calc(100vh - var(--mnav-h));
+    height: calc(100svh - var(--mnav-h));
+    min-height: 260px;
   }
 
   /* Keyboard focus on a project tile: ink / sand / ink bands, so the ring shows on any artwork,
@@ -367,11 +402,522 @@
   .viewer-attention {
     animation: viewer-attention 960ms ease-in-out calc(var(--viewer-duration) + 120ms);
   }
+  /* When DESCRIPTION is flashing too (the first project someone opens), the extras wait their turn. */
+  .viewer-attention-late {
+    animation-delay: calc(var(--viewer-duration) + 1200ms);
+  }
 
   /* Lite YouTube facade sizing inside the viewer */
   .viewer .yt-lite {
     width: 100%;
     height: 100%;
+  }
+}
+
+/*
+  About / resume page (src/about/, served at /about/).
+*/
+@layer components {
+  /* The docked rail rides over the slides; only the rail itself takes the pointer. */
+  .about-rail .rail-slot {
+    pointer-events: none;
+  }
+  .about-rail .rail {
+    pointer-events: auto;
+  }
+
+  /* Slide 1: words on the left, a large portrait on the right. */
+  .about-intro {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    align-items: center;
+    gap: clamp(32px, 5vw, 110px);
+    height: 100%;
+    padding: clamp(32px, 6vh, 80px) clamp(72px, 7vw, 140px) clamp(32px, 6vh, 80px) clamp(40px, 6vw, 120px);
+  }
+  .about-copy {
+    max-width: 640px;
+  }
+  .about-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 0.75em;
+    font-family: var(--font-ddc);
+    font-size: clamp(13px, 1.6vh, 17px);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+  .about-eyebrow::before {
+    content: "";
+    width: 2.5em;
+    border-top: 2px solid currentColor;
+  }
+  .about-headline {
+    margin-top: 0.35em;
+    font-family: var(--font-ddc);
+    font-size: clamp(36px, min(4.3vw, 8vh), 104px);
+    line-height: 0.95;
+    letter-spacing: 0.01em;
+    text-wrap: balance;
+  }
+  .about-blurb {
+    margin-top: 1em;
+    max-width: 34em;
+    font-family: var(--font-text);
+    font-size: clamp(16px, min(1.3vw, 2.1vh), 21px);
+    line-height: 1.6;
+    opacity: 0.92;
+    text-wrap: pretty;
+  }
+  .about-copy .about-headline + .about-blurb {
+    margin-top: 1.2em;
+  }
+  .about-photo {
+    position: relative;
+    justify-self: end;
+    height: 100%;
+    max-width: 100%;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+  }
+  .about-photo-placeholder {
+    position: absolute;
+    inset: 0;
+    background-color: var(--color-sand);
+    background-image: radial-gradient(circle, rgb(29 38 44 / 0.22) 1.6px, transparent 2px);
+    background-size: 9px 9px;
+  }
+  /* Phones: the portrait first, then the words. */
+  .about-intro-stacked {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 32px;
+    height: auto;
+    padding: 0;
+  }
+  .about-intro-stacked .about-photo {
+    justify-self: auto;
+    width: min(100%, 520px, 60svh);
+    height: auto;
+    margin: 0 auto;
+  }
+  /* Phones on their side: portrait on the left, words on the right. */
+  @media (orientation: landscape) {
+    .about-intro-stacked {
+      flex-direction: row-reverse;
+      align-items: center;
+      gap: 5vw;
+    }
+    .about-intro-stacked .about-photo {
+      flex: none;
+      width: min(40%, 64svh);
+      margin: 0;
+    }
+    .about-intro-stacked .about-copy {
+      flex: 1;
+    }
+  }
+  .about-intro-stacked .about-headline {
+    font-size: clamp(32px, min(11vw, 9svh), 76px);
+  }
+  .about-intro-stacked .about-blurb {
+    font-size: clamp(16px, 4.2vw, 19px);
+  }
+
+  /*
+    Slide 2: the resume board. Text sizes follow the screen height (the board always fits one
+    screen), in ems from here down. Sand cards on the ink table, with crop marks at their corners.
+  */
+  .resume-board {
+    --gap: clamp(20px, 2.4vh, 32px);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: clamp(18px, 2.8vh, 40px) clamp(48px, 4.5vw, 96px) clamp(50px, 6.4vh, 72px) clamp(32px, 3.2vw, 64px);
+    font-family: var(--font-text);
+    /* A starting point; useFitText (Resume.tsx) sets the real size to fit the screen. */
+    font-size: clamp(10.5px, 1.4vh, 17px);
+    container-type: inline-size;
+  }
+  /* Too short to fit one screen: the cards grow to their contents and the slide scrolls. */
+  .resume-board[data-flow] {
+    height: auto;
+    min-height: 100%;
+  }
+  .resume-board[data-flow] .resume-grid {
+    flex: none;
+    grid-template-rows: auto;
+  }
+  .resume-board[data-flow] .resume-card-body {
+    overflow: visible;
+  }
+  [data-slide]:has(> .resume-board[data-flow]) {
+    overflow-y: auto;
+    overscroll-behavior-y: auto;
+    scrollbar-width: thin;
+  }
+  .resume-board-head {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 1.2em;
+    margin-bottom: var(--gap);
+  }
+  .resume-board-head > p {
+    flex: 1;
+  }
+  .resume-grid {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    gap: var(--gap);
+    grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "sum  hon hon"
+      "work hon hon"
+      "work skl skl"
+      "work edu edu";
+  }
+  /* Honors as two columns, education as three, in their wide cards. */
+  .resume-grid .resume-honors {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9em 1.6em;
+  }
+  .resume-grid .resume-schools {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.6em 1.6em;
+  }
+  /* Narrower desktops (4:3, 5:4): two columns. */
+  @container (max-width: 1080px) {
+    .resume-grid {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-rows: auto minmax(0, 1fr) auto auto;
+      grid-template-areas:
+        "sum  sum"
+        "work hon"
+        "skl  skl"
+        "edu  edu";
+    }
+    .resume-grid .resume-honors {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  .resume-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: 1em 1.25em 1.1em;
+    background: var(--color-sand);
+    color: var(--color-ink);
+  }
+  .resume-card::before {
+    --c: color-mix(in oklab, var(--color-sand) 50%, transparent);
+    --l: 12px;
+    content: "";
+    position: absolute;
+    inset: -9px;
+    pointer-events: none;
+    background:
+      linear-gradient(var(--c), var(--c)) top left / var(--l) 1.5px no-repeat,
+      linear-gradient(var(--c), var(--c)) top left / 1.5px var(--l) no-repeat,
+      linear-gradient(var(--c), var(--c)) top right / var(--l) 1.5px no-repeat,
+      linear-gradient(var(--c), var(--c)) top right / 1.5px var(--l) no-repeat,
+      linear-gradient(var(--c), var(--c)) bottom left / var(--l) 1.5px no-repeat,
+      linear-gradient(var(--c), var(--c)) bottom left / 1.5px var(--l) no-repeat,
+      linear-gradient(var(--c), var(--c)) bottom right / var(--l) 1.5px no-repeat,
+      linear-gradient(var(--c), var(--c)) bottom right / 1.5px var(--l) no-repeat;
+  }
+  .resume-card-head {
+    display: flex;
+    flex: none;
+    align-items: baseline;
+    gap: 0.6em;
+    margin-bottom: 0.75em;
+    padding-bottom: 0.4em;
+    border-bottom: 2px solid var(--color-ink);
+    font-family: var(--font-ddc);
+    font-size: 1.15em;
+    letter-spacing: 0.08em;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+  .resume-num {
+    font-size: 0.78em;
+    opacity: 0.5;
+    font-variant-numeric: tabular-nums;
+  }
+  /* If a card's contents ever outgrow it (very short screens), it scrolls on its own. */
+  .resume-card-body {
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  .resume-summary {
+    font-size: 1.04em;
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+
+  .resume-jobs {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+  }
+  .resume-job-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1em;
+  }
+  .resume-job-org {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.2em 0.55em;
+    font-family: var(--font-ddc);
+    font-size: 1.14em;
+    letter-spacing: 0.03em;
+    line-height: 1.2;
+  }
+  .resume-job-kind {
+    font-size: 0.68em;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+  .resume-now {
+    padding: 0.3em 0.55em 0.25em;
+    background: var(--color-tomato);
+    color: var(--color-ink);
+    font-size: 0.6em;
+    letter-spacing: 0.16em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+  .resume-job-title {
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .resume-dates {
+    flex: none;
+    font-size: 0.86em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    opacity: 0.75;
+  }
+  .resume-bullets {
+    margin-top: 0.35em;
+    padding-left: 1.1em;
+    list-style: square;
+    line-height: 1.42;
+    text-wrap: pretty;
+  }
+  .resume-bullets > li + li {
+    margin-top: 0.22em;
+  }
+  .resume-unit {
+    margin-top: 0.55em;
+  }
+  .resume-unit-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1em;
+    font-size: 0.95em;
+  }
+  /* The current job (freelance): reversed out, ink on the sand card. */
+  .resume-job[data-current] {
+    padding: 0.85em 1em 0.95em;
+    background: var(--color-ink);
+    color: var(--color-sand);
+  }
+
+  .resume-honors {
+    display: flex;
+    flex-direction: column;
+    gap: 0.95em;
+  }
+  .resume-honor {
+    display: grid;
+    grid-template-columns: 1.9em minmax(0, 1fr);
+    gap: 0.75em;
+  }
+  .resume-honor-icon {
+    width: 1.9em;
+    height: auto;
+    margin-top: 0.05em;
+  }
+  .resume-honor-title {
+    font-family: var(--font-ddc);
+    font-size: 1.02em;
+    letter-spacing: 0.03em;
+    line-height: 1.2;
+  }
+  .resume-honor-text {
+    margin-top: 0.15em;
+    line-height: 1.38;
+    text-wrap: pretty;
+  }
+  .resume-records {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35em;
+    margin-top: 0.45em;
+  }
+  .resume-record {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    padding: 0.32em 0.55em 0.28em;
+    border: 1.5px solid var(--color-ink);
+    font-family: var(--font-ddc);
+    font-size: 0.78em;
+    letter-spacing: 0.08em;
+    line-height: 1;
+    text-transform: uppercase;
+    transition: background-color 0.15s, color 0.15s;
+  }
+  .resume-record:hover,
+  .resume-record:focus-visible {
+    background: var(--color-ink);
+    color: var(--color-sand);
+  }
+  .resume-record:focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+
+  /*
+    Skill pills. A skill with parts (Adobe Creative Cloud) is a darker pill holding its name and then
+    lighter, smaller pills for the parts; it wraps onto more lines if it has to.
+  */
+  .resume-skills {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+  }
+  /* Each group is one run of pills, led by its name. */
+  .resume-skill-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.34em;
+  }
+  .resume-skill-label {
+    margin-right: 0.4em;
+    font-family: var(--font-ddc);
+    font-size: 0.8em;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    opacity: 0.65;
+  }
+  .resume-pills {
+    display: contents;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    height: 1.9em;
+    padding: 0 0.75em;
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--color-ink) 13%, var(--color-sand));
+    font-size: 0.87em;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .pill-parent {
+    flex-wrap: wrap;
+    gap: 0.25em;
+    height: auto;
+    min-height: 1.9em;
+    padding: 0.22em 0.22em 0.22em 0.75em;
+    border-radius: 0.95em;
+    background: color-mix(in oklab, var(--color-ink) 28%, var(--color-sand));
+    white-space: normal;
+  }
+  .pill-name {
+    margin-right: 0.25em;
+    font-weight: 600;
+  }
+  .pill-sub {
+    height: 1.5em;
+    padding: 0 0.6em;
+    background: color-mix(in oklab, white 45%, var(--color-sand));
+    font-size: 0.88em;
+  }
+
+  .resume-schools {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6em;
+    line-height: 1.35;
+  }
+  .resume-school-name {
+    font-family: var(--font-ddc);
+    font-size: 1em;
+    letter-spacing: 0.03em;
+  }
+
+  /* RESUME PDF: on the board (on ink) it's sand; in the phone version (on sand) it's ink. */
+  .resume-pdf {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 0.55em;
+    height: 2.7em;
+    padding: 0 1.05em;
+    border: 2px solid var(--color-sand);
+    font-family: var(--font-ddc);
+    font-size: 0.95em;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    text-transform: uppercase;
+    transition: background-color 0.15s, color 0.15s;
+  }
+  .resume-pdf:hover,
+  .resume-pdf:focus-visible {
+    background: var(--color-sand);
+    color: var(--color-ink);
+  }
+  .resume-pdf:focus-visible {
+    outline: 2px solid var(--color-sand);
+    outline-offset: 2px;
+  }
+  .resume-doc .resume-pdf {
+    height: 44px;
+    border-color: var(--color-ink);
+  }
+  .resume-doc .resume-pdf:hover,
+  .resume-doc .resume-pdf:focus-visible {
+    background: var(--color-ink);
+    color: var(--color-sand);
+    outline-color: var(--color-ink);
+  }
+
+  /* Phones and tablets: the whole resume, one column, on sand. */
+  .resume-doc {
+    max-width: 760px;
+    margin: 0 auto;
+    font-family: var(--font-text);
+    font-size: 15px;
+  }
+  @media (min-width: 768px) {
+    .resume-doc {
+      font-size: 16px;
+    }
+  }
+  .resume-doc .resume-card-head {
+    font-size: 1.25em;
+  }
+  .resume-doc .resume-job-head,
+  .resume-doc .resume-unit-head {
+    flex-wrap: wrap;
+    gap: 0.1em 1em;
   }
 }
 
@@ -411,10 +957,10 @@
   from { transform: translate3d(0, 0, 0); }
   to { transform: translate3d(calc(100% + 40px), 0, 0); }
 }
-/* "off" is the button's resting look (bg-ink/40, sand text); "on" is its hover look (sand, ink text) */
+/* "off" is the button's resting look (ink, sand text); "on" is its hover look (sand, ink text) */
 @keyframes viewer-attention {
   0%, 30%, 60%, 100% {
-    background-color: color-mix(in oklab, var(--color-ink) 40%, transparent);
+    background-color: var(--color-ink);
     color: var(--color-sand);
   }
   12%, 20%, 42%, 50%, 72%, 82% {

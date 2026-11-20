@@ -1,0 +1,11 @@
+{
+  "_note": "PLACEHOLDER copy for the About slide (/about/). The headline and blurb are drafts built from the resume summary; replace them with your own words. Put the stylized portrait in public/about/ and set \"photo\" to its path (e.g. \"/about/portrait.png\"); until then the page shows a placeholder frame.",
+  "eyebrow": "About",
+  "headline": "Designer. Videographer. Navy veteran.",
+  "blurb": [
+    "For 14 years I've made brands, video, interfaces, and live events, from laying out All Hands, the Navy's flagship magazine, to leading in-house creative at a venture-backed defense tech company.",
+    "I like working next to engineers and specialists until I understand the complicated thing, then making it clear enough that anyone can follow."
+  ],
+  "photo": null,
+  "photoAlt": "Portrait of Patrick Enright"
+}

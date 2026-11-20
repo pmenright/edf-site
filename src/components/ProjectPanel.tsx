@@ -30,7 +30,7 @@ export function ProjectPanel({ project, onOpen, eager = false, className }: Proj
         <Picture
           asset={thumb.asset}
           alt={thumb.alt}
-          sizes={`${STRIP_QUERY} 100vh, 100vw`}
+          sizes={`${STRIP_QUERY} 100vh, (orientation: landscape) 50vw, (min-width: 768px) 50vw, 100vw`}
           loading={eager ? 'eager' : 'lazy'}
           className="thumb h-full w-full object-cover"
         />

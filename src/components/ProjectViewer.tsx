@@ -1,4 +1,4 @@
-import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion } from 'motion/react'
+import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion, type Transition } from 'motion/react'
 import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent, type PointerEvent, type ReactNode, type RefObject } from 'react'
 import LiteYouTubeEmbed from 'react-lite-youtube-embed'
 import closeX from '../assets/brand/close-x.svg'
@@ -37,9 +37,10 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
   const heading = useRef<HTMLHeadingElement>(null)
   const reduce = useReducedMotion()
   const portrait = useMediaQuery('(orientation: portrait)')
-  const [descHeight, setDescHeight] = useState(0)
+  const sheetW = useSheetWidth()
+  const [barH, setBarH] = useState(0)
+  const [sheetH, setSheetH] = useState(0)
   const [leaving, setLeaving] = useState(false)
-  const [hiddenForPlayback, setHiddenForPlayback] = useState(false)
   const [showAlternate, setShowAlternate] = useState(false)
   const [downloadOpen, setDownloadOpen] = useState(false)
   const documentScroller = useRef<HTMLDivElement>(null)
@@ -51,12 +52,24 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
   // DESCRIPTION shows a project's title, discipline or video details, and text. The resume has none of
   // those, so it gets no DESCRIPTION button.
   const hasDescription = !!(project.description || project.discipline || project.duties)
-  const extraRow = hasDescription ? 'max-sm:order-3 max-sm:mr-2.5' : ''
-  const showDescription = descriptionOpen && !hiddenForPlayback && hasDescription
-  // On tall screens, lift the artwork into the space above the text instead of covering it.
-  const lifted = portrait && showDescription
-  const stageBottom = lifted ? Math.max(0, descHeight - 64) : 0
-  const stageTop = lifted ? 76 : 0 // clear the DESCRIPTION / close buttons
+  const showDescription = descriptionOpen && hasDescription
+  // The first time someone opens a project, DESCRIPTION calls attention to itself once.
+  const [descriptionHint] = useState(() => hasDescription && !descriptionOpen && !descriptionHinted && (descriptionHinted = true))
+  const descriptionAttention = useAttention(descriptionHint)
+  // ...and the extra buttons (Visit site, Watch video) wait until it's done, so they flash one at a time.
+  const lateExtras = descriptionHint ? 'viewer-attention-late' : ''
+  /*
+    Nothing ever sits on top of the artwork. The caption bar (title, DESCRIPTION, the project's extra
+    buttons) has its own strip under it. The description opens as a sheet beside it on screens lying
+    on their side, and as a drawer under the caption bar on tall screens; either way the artwork
+    re-fits into the space that's left. On tall screens it also keeps clear of the close button.
+  */
+  const side = !portrait && showDescription
+  const drawer = portrait && showDescription ? sheetH : 0
+  const stageTop = portrait ? TOP_BAND : 0
+  const stageBottom = barH + drawer + (portrait ? 4 : 0)
+  const stageRight = side ? sheetW : 0
+  const sheetMotion: Transition = { duration: reduce ? 0 : 0.3, ease: SWAP_EASE }
 
   useEffect(() => {
     const d = dialog.current!
@@ -141,8 +154,6 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
     setDeckScrolled(false)
     window.clearTimeout(hintTimer.current)
     hintTimer.current = 0
-    // A video playing on a wide screen hid the description; bring it back with the design.
-    setHiddenForPlayback(false)
   }
   const toggleAlternate = () => showView(!showAlternate)
 
@@ -250,19 +261,13 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
   // What's on screen: the main view or the alternate.
   const shown = showAlternate && alternate ? alternate.media : media
   const showDeckHint = shown.type === 'document' && !deckScrolled && !leaving
-  const onVideoPlay = () => {
-    // A playing video sits under the text on wide screens; get out of the way.
-    if (!portrait) setHiddenForPlayback(true)
-  }
   const swap = { duration: reduce ? 0 : 0.4, ease: SWAP_EASE }
 
   const toggleDescription = () => {
-    if (showDescription) onDescriptionOpen(false)
-    else {
-      setHiddenForPlayback(false)
-      onDescriptionOpen(true)
-    }
+    descriptionAttention.stop()
+    onDescriptionOpen(!showDescription)
   }
+
 
   return (
     <dialog
@@ -325,8 +330,8 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
           className="absolute inset-x-0 [container-type:size]"
           style={{ top: 0, bottom: 0 }}
           initial={false}
-          animate={{ top: stageTop, bottom: stageBottom }}
-          transition={{ duration: reduce ? 0 : 0.25, ease: 'easeInOut' }}
+          animate={{ top: stageTop, bottom: stageBottom, right: stageRight }}
+          transition={sheetMotion}
         >
           {/* Watch video: the design slides up and away while the video slides up into its place.
               See design reverses it. The view that leaves is removed, which also stops the video.
@@ -343,11 +348,11 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
                 transition={swap}
               >
                 {alternate.media.type === 'image' ? (
-                  <ImageStage media={alternate.media} preloaded={isMediaReady(alternate.media)} onClose={close} />
+                  <ImageStage media={alternate.media} preloaded={isMediaReady(alternate.media)} onClose={close} anchorBottom={portrait} />
                 ) : alternate.media.type === 'document' ? (
-                  <DocumentStage media={alternate.media} onClose={close} scroller={documentScroller} onScroll={onDeckScroll} />
+                  <DocumentStage media={alternate.media} onClose={close} scroller={documentScroller} onScroll={onDeckScroll} clearTop={!portrait} />
                 ) : (
-                  <VideoStage media={alternate.media} onBackdrop={close} onPlay={onVideoPlay} />
+                  <VideoStage media={alternate.media} onBackdrop={close} anchorBottom={portrait} />
                 )}
               </motion.div>
             ) : (
@@ -360,11 +365,11 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
                 transition={swap}
               >
                 {media.type === 'image' ? (
-                  <ImageStage media={media} preloaded={isReady(project)} onClose={close} />
+                  <ImageStage media={media} preloaded={isReady(project)} onClose={close} anchorBottom={portrait} />
                 ) : media.type === 'document' ? (
-                  <DocumentStage media={media} onClose={close} scroller={documentScroller} onScroll={onDeckScroll} />
+                  <DocumentStage media={media} onClose={close} scroller={documentScroller} onScroll={onDeckScroll} clearTop={!portrait} />
                 ) : (
-                  <VideoStage media={media} onBackdrop={close} onPlay={onVideoPlay} />
+                  <VideoStage media={media} onBackdrop={close} anchorBottom={portrait} />
                 )}
               </motion.div>
             )}
@@ -372,91 +377,101 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
           </motion.div>
         </motion.div>
 
+        {/* The caption bar: the project's name, DESCRIPTION, and its extra buttons, in their own strip
+            under the artwork (it slides up with it). On tall screens the description opens as a drawer
+            under it and pushes it up; on wide ones it opens beside the artwork and the bar re-centers
+            under what's left. */}
+        <motion.div
+          className="absolute left-0"
+          style={{ bottom: 0, right: 0 }}
+          initial={false}
+          animate={{ bottom: drawer, right: stageRight }}
+          transition={sheetMotion}
+        >
+          <CaptionBar project={project} onHeight={setBarH}>
+            {hasDescription && (
+              <button
+                type="button"
+                onClick={toggleDescription}
+                aria-expanded={showDescription}
+                aria-controls="project-description"
+                aria-keyshortcuts="D"
+                className={`${BAR_BUTTON} ${showDescription ? 'bg-sand text-ink' : 'bg-ink text-sand hover:bg-sand hover:text-ink'} ${
+                  descriptionAttention.on ? 'viewer-attention' : ''
+                }`}
+                onPointerEnter={descriptionAttention.stop}
+                onAnimationEnd={descriptionAttention.stop}
+              >
+                <PlusMinus open={showDescription} />
+                Description
+              </button>
+            )}
+            {project.link &&
+              (project.link.download ? (
+                // A file to download: opens a small popup with the actual download button.
+                <button
+                  ref={downloadButton}
+                  type="button"
+                  aria-haspopup="dialog"
+                  onClick={() => {
+                    linkAttention.stop()
+                    setDownloadOpen(true)
+                  }}
+                  onPointerEnter={linkAttention.stop}
+                  onAnimationEnd={linkAttention.stop}
+                  className={`${BAR_BUTTON} ${EXTRA_BUTTON} ${linkAttention.on ? `viewer-attention ${lateExtras}` : ''}`}
+                >
+                  <DownloadIcon />
+                  {project.link.label}
+                </button>
+              ) : (
+                <a
+                  href={withBase(project.link.href)}
+                  target="_blank"
+                  rel="noopener"
+                  aria-label={`${project.link.label} (opens in a new tab)`}
+                  onPointerEnter={linkAttention.stop}
+                  onAnimationEnd={linkAttention.stop}
+                  className={`${BAR_BUTTON} ${EXTRA_BUTTON} ${linkAttention.on ? `viewer-attention ${lateExtras}` : ''}`}
+                >
+                  {project.link.label}
+                  <ExternalIcon />
+                </a>
+              ))}
+            {alternate && (
+              <button
+                type="button"
+                onClick={toggleAlternate}
+                onPointerEnter={alternateAttention.stop}
+                onAnimationEnd={alternateAttention.stop}
+                className={`${BAR_BUTTON} ${EXTRA_BUTTON} ${alternateAttention.on ? `viewer-attention ${lateExtras}` : ''}`}
+              >
+                {showAlternate ? alternate.backLabel : alternate.label}
+              </button>
+            )}
+          </CaptionBar>
+        </motion.div>
+
         {/* The text rides in with the artwork when it was already open from the last project. */}
         <AnimatePresence initial={false}>
-          {showDescription && <Description project={project} onHeight={setDescHeight} />}
+          {showDescription && (
+            <DescriptionSheet
+              key={portrait ? 'drawer' : 'side'}
+              project={project}
+              side={!portrait}
+              width={sheetW}
+              onHeight={setSheetH}
+              transition={sheetMotion}
+            />
+          )}
         </AnimatePresence>
       </div>
 
       <div
-        className="viewer-controls absolute top-[30px] right-[30px] z-10 flex items-center gap-3 max-sm:pointer-events-none max-sm:left-3 max-sm:right-3 max-sm:flex-wrap max-sm:justify-end max-sm:gap-x-2 max-sm:gap-y-0 max-sm:*:pointer-events-auto"
+        className="viewer-controls absolute top-3 right-3 z-10 sm:top-6 sm:right-6"
         data-leaving={leaving || undefined}
         inert={downloadOpen}
       >
-        {/* On phones a project's extra button (Visit site, Watch video...) drops to its own row,
-            right under DESCRIPTION and close, so long labels never push them off the screen. With
-            no DESCRIPTION (the resume) it stays beside close. */}
-        {(project.link || alternate) && hasDescription && <div aria-hidden="true" className="hidden h-0 basis-full max-sm:order-2 max-sm:block" />}
-        {project.link &&
-          (project.link.download ? (
-            // A file to download: opens a small popup with the actual download button.
-            <button
-              ref={downloadButton}
-              type="button"
-              aria-haspopup="dialog"
-              onClick={() => {
-                linkAttention.stop()
-                setDownloadOpen(true)
-              }}
-              className={`group grid h-11 cursor-pointer place-items-center outline-none ${extraRow}`}
-              onPointerEnter={linkAttention.stop}
-            >
-              <span
-                className={`${linkAttention.on ? 'viewer-attention ' : ''}block ${EXTRA_BUTTON}`}
-                onAnimationEnd={linkAttention.stop}
-              >
-                {project.link.label}
-              </span>
-            </button>
-          ) : (
-            <a
-              href={withBase(project.link.href)}
-              target="_blank"
-              rel="noopener"
-              aria-label={`${project.link.label} (opens in a new tab)`}
-              className={`group grid h-11 cursor-pointer place-items-center outline-none ${extraRow}`}
-              onPointerEnter={linkAttention.stop}
-            >
-              <span
-                className={`${linkAttention.on ? 'viewer-attention ' : ''}block ${EXTRA_BUTTON}`}
-                onAnimationEnd={linkAttention.stop}
-              >
-                {project.link.label}
-              </span>
-            </a>
-          ))}
-        {alternate && (
-          <button
-            type="button"
-            onClick={toggleAlternate}
-            className={`group grid h-11 cursor-pointer place-items-center outline-none ${extraRow}`}
-            onPointerEnter={alternateAttention.stop}
-          >
-            <span
-              className={`${alternateAttention.on ? 'viewer-attention ' : ''}block ${EXTRA_BUTTON}`}
-              onAnimationEnd={alternateAttention.stop}
-            >
-              {showAlternate ? alternate.backLabel : alternate.label}
-            </span>
-          </button>
-        )}
-        {hasDescription && (
-          <button
-            type="button"
-            onClick={toggleDescription}
-            aria-expanded={showDescription}
-            aria-controls="project-description"
-            className="group grid h-11 cursor-pointer place-items-center outline-none"
-          >
-            <span
-              className={`block h-[30px] border-2 border-sand px-3 max-sm:px-2 font-ddc text-[14px] leading-[26px] tracking-[0.08em] max-sm:text-[12px] max-sm:tracking-[0.05em] uppercase transition-colors group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-sand ${
-                showDescription ? 'bg-sand text-ink' : 'bg-ink/40 text-sand group-hover:bg-sand/15'
-              }`}
-            >
-              Description
-            </span>
-          </button>
-        )}
         <button
           type="button"
           onClick={close}
@@ -466,12 +481,12 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
           <img
             src={closeX}
             alt=""
-            className="size-[25px] rounded-full transition-transform duration-200 ease-in-out group-hover:scale-130 group-focus-visible:outline-2 group-focus-visible:outline-offset-4 group-focus-visible:outline-sand"
+            className="size-[25px] rounded-full transition-transform duration-200 ease-in-out group-hover:scale-130 group-focus-visible:outline-2 group-focus-visible:outline-offset-4 group-focus-visible:outline-sand sm:size-[28px]"
           />
         </button>
       </div>
 
-      <AnimatePresence>{showDeckHint && <ScrollHint reduce={!!reduce} />}</AnimatePresence>
+      <AnimatePresence>{showDeckHint && <ScrollHint reduce={!!reduce} bottom={barH + drawer + 20} right={stageRight} />}</AnimatePresence>
 
       <AnimatePresence>
         {downloadOpen && project.link?.download && (
@@ -564,9 +579,38 @@ function DownloadPopup({
   )
 }
 
-/** Look of a project's extra buttons (Visit site, Watch video): like DESCRIPTION, filling in on hover. */
-const EXTRA_BUTTON =
-  'h-[30px] border-2 border-sand bg-ink/40 px-3 max-sm:px-2 font-ddc text-[14px] leading-[26px] tracking-[0.08em] max-sm:text-[12px] max-sm:tracking-[0.05em] whitespace-nowrap text-sand uppercase transition-colors group-hover:bg-sand group-hover:text-ink group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-sand'
+/**
+ * The caption bar's buttons: DESCRIPTION and a project's extras (Visit site, Watch video...). Solid,
+ * with a sand outline, on the dark strip under the artwork, so they read the same on every board.
+ * 44px tall for fingers, 40px with a mouse, and a little larger on very wide screens.
+ */
+const BAR_BUTTON =
+  'inline-flex h-11 cursor-pointer items-center justify-center gap-2 border-2 border-sand px-4 font-ddc text-[15px] leading-none tracking-[0.08em] whitespace-nowrap uppercase outline-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sand pointer-fine:h-10 wide:h-12 wide:px-5 wide:text-[17px] max-sm:h-auto max-sm:min-h-11 max-sm:flex-1 max-sm:basis-0 max-sm:px-2.5 max-sm:py-1.5 max-sm:text-center max-sm:text-[13px] max-sm:leading-[1.2] max-sm:tracking-[0.05em] max-sm:whitespace-normal'
+/** Extras look like DESCRIPTION when it's closed, and fill in on hover. */
+const EXTRA_BUTTON = 'bg-ink text-sand hover:bg-sand hover:text-ink'
+
+/** On tall screens the artwork keeps clear of the close button in the top corner. */
+const TOP_BAND = 64
+
+/** DESCRIPTION's one-time hint plays on the first project someone opens, then never again. */
+let descriptionHinted = false
+
+/** Width of the description sheet beside the artwork on screens lying on their side. */
+function useSheetWidth() {
+  const measure = () => {
+    const w = window.innerWidth
+    return window.innerHeight <= 500
+      ? Math.round(Math.min(380, Math.max(260, w * 0.42)))
+      : Math.round(Math.min(480, Math.max(320, w * 0.32)))
+  }
+  const [width, setWidth] = useState(measure)
+  useEffect(() => {
+    const onResize = () => setWidth(measure())
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+  return width
+}
 
 /**
  * A button's one-time call for attention (the .viewer-attention flash in index.css). It plays once,
@@ -574,8 +618,8 @@ const EXTRA_BUTTON =
  * doesn't come back while the viewer stays open. (Not ended on focus: Firefox's showModal focuses the
  * first button for a moment while the viewer opens, which would cancel it before it starts.)
  */
-function useAttention() {
-  const [on, setOn] = useState(true)
+function useAttention(initial = true) {
+  const [on, setOn] = useState(initial)
   return { on, stop: () => setOn(false) }
 }
 
@@ -648,7 +692,21 @@ function usePortraitLayout(stage: RefObject<HTMLDivElement | null>, wide: MediaA
   return portrait
 }
 
-function ImageStage({ media: board, preloaded, onClose }: { media: ImageMedia; preloaded: boolean; onClose: () => void }) {
+/**
+ * anchorBottom (tall screens): the artwork sits on the caption bar instead of floating in the middle,
+ * so the name and buttons read as its label.
+ */
+function ImageStage({
+  media: board,
+  preloaded,
+  onClose,
+  anchorBottom,
+}: {
+  media: ImageMedia
+  preloaded: boolean
+  onClose: () => void
+  anchorBottom: boolean
+}) {
   // Decided once, when the viewer opens.
   const [instant] = useState(preloaded)
   const [loaded, setLoaded] = useState(preloaded)
@@ -663,6 +721,7 @@ function ImageStage({ media: board, preloaded, onClose }: { media: ImageMedia; p
   const ratio = split ? asset.width / 2 / (asset.height * 2) : asset.width / asset.height
   const box = { aspectRatio: `${ratio}`, width: `min(100cqw, 100cqh * ${ratio})` }
   const fade = instant ? '' : `transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`
+  const place = anchorBottom ? 'items-end justify-items-center' : 'place-items-center'
   // Each half is a window onto the full image at twice the window's width, stacked in `split` order.
   const [top, bottom] = media.split === 'right-first' ? (['right', 'left'] as const) : (['left', 'right'] as const)
   const halves = (render: (side: 'left' | 'right') => ReactNode) => (
@@ -676,7 +735,7 @@ function ImageStage({ media: board, preloaded, onClose }: { media: ImageMedia; p
     <div ref={stage} className="absolute inset-0 cursor-zoom-out" {...clickToClose}>
       {!loaded && (
         // Same box the real image will fill (exact aspect ratio), so nothing shifts when it arrives.
-        <div aria-hidden="true" className="absolute inset-0 grid place-items-center overflow-hidden">
+        <div aria-hidden="true" className={`absolute inset-0 grid overflow-hidden ${place}`}>
           <div className="relative blur-sm" style={split ? box : { ...box, backgroundImage: `url(${asset.blur})`, backgroundSize: '100% 100%' }}>
             {split &&
               halves((side) => (
@@ -689,7 +748,7 @@ function ImageStage({ media: board, preloaded, onClose }: { media: ImageMedia; p
         </div>
       )}
       {split ? (
-        <div className="absolute inset-0 grid place-items-center">
+        <div className={`absolute inset-0 grid ${place}`}>
           <div className={`relative ${fade}`} style={box}>
             {halves((side) => (
               <Picture
@@ -711,7 +770,7 @@ function ImageStage({ media: board, preloaded, onClose }: { media: ImageMedia; p
           sizes="100vw"
           onLoad={() => setLoaded(true)}
           decoding={instant ? 'sync' : 'async'}
-          className={`absolute inset-0 h-full w-full object-contain ${fade}`}
+          className={`absolute inset-0 h-full w-full object-contain ${anchorBottom ? 'object-bottom' : ''} ${fade}`}
         />
       )}
     </div>
@@ -729,11 +788,14 @@ function DocumentStage({
   onClose,
   scroller,
   onScroll,
+  clearTop,
 }: {
   media: DocumentMedia
   onClose: () => void
   scroller: RefObject<HTMLDivElement | null>
   onScroll: () => void
+  /** Start the pages below the close button (when the stage itself reaches the top of the screen). */
+  clearTop: boolean
 }) {
   const clickToClose = useClickToClose(onClose)
   const first = getAsset(media.pages[0])
@@ -752,7 +814,7 @@ function DocumentStage({
       {...clickToClose}
     >
       <div
-        className="mx-auto flex flex-col gap-6 pt-[88px] pb-16"
+        className={`mx-auto flex flex-col gap-6 pb-10 ${clearTop ? 'pt-[76px]' : 'pt-2'}`}
         style={{ width }}
       >
         {media.pages.map((key, i) => (
@@ -776,11 +838,12 @@ function DocumentStage({
  * animations) in a circle of the hero's ink color with the buttons' sand outline, its arrow turned to point down. It slides up from the bottom a
  * moment after the pages arrive and slides back down once they're scrolled.
  */
-function ScrollHint({ reduce }: { reduce: boolean }) {
+function ScrollHint({ reduce, bottom, right }: { reduce: boolean; bottom: number; right: number }) {
   return (
     <motion.div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-x-0 bottom-8 z-10 mx-auto grid size-24 place-items-center rounded-full border-2 border-sand bg-ink shadow-[0_4px_16px_rgb(0_0_0/0.35)]"
+      style={{ bottom, right }}
+      className="pointer-events-none absolute left-0 z-10 mx-auto grid size-24 place-items-center rounded-full border-2 border-sand bg-ink shadow-[0_4px_16px_rgb(0_0_0/0.35)]"
       initial={{ y: reduce ? 0 : 160, opacity: reduce ? 0 : 1 }}
       animate={{ y: 0, opacity: 1, transition: { delay: 0.9, duration: reduce ? 0.2 : 0.5, ease: SWAP_EASE } }}
       exit={{ y: reduce ? 0 : 160, opacity: reduce ? 0 : 1, transition: { duration: reduce ? 0.2 : 0.4, ease: [0.32, 0, 0.67, 0] } }}
@@ -809,11 +872,14 @@ function scrollByKey(el: HTMLElement, key: string, shift: boolean, reduce: boole
   }
 }
 
-function VideoStage({ media, onBackdrop, onPlay }: { media: YouTubeMedia; onBackdrop: () => void; onPlay: () => void }) {
+function VideoStage({ media, onBackdrop, anchorBottom }: { media: YouTubeMedia; onBackdrop: () => void; anchorBottom: boolean }) {
   const clickToClose = useClickToClose(onBackdrop)
   return (
     // Clicking anywhere around the video closes, as on the original site.
-    <div className="absolute inset-0 grid cursor-zoom-out place-items-center" {...clickToClose}>
+    <div
+      className={`absolute inset-0 grid cursor-zoom-out ${anchorBottom ? 'items-end justify-items-center' : 'place-items-center'}`}
+      {...clickToClose}
+    >
       <div
         className="aspect-video w-[min(90cqw,calc((100cqh-120px)*16/9))]"
         onClick={(e) => e.stopPropagation()}
@@ -825,53 +891,138 @@ function VideoStage({ media, onBackdrop, onPlay }: { media: YouTubeMedia; onBack
           poster={media.poster}
           webp
           params="rel=0"
-          onIframeAdded={onPlay}
         />
       </div>
     </div>
   )
 }
 
-function Description({ project, onHeight }: { project: Project; onHeight: (h: number) => void }) {
-  const isVideo = project.category === 'video'
-  const ref = useRef<HTMLElement>(null)
-  useEffect(() => {
+/** What the caption bar says under the title: a design's discipline, or that it's a video. */
+const subtitle = (p: Project) => p.discipline ?? (p.category === 'video' ? 'Video' : '')
+
+/**
+ * The strip under the artwork: the project's name (and discipline), then its buttons. One row where
+ * there's room; on phones the name sits above a full-width row of buttons, within thumb's reach.
+ * Reports its height so the artwork can fit above it.
+ */
+function CaptionBar({ project, onHeight, children }: { project: Project; onHeight: (h: number) => void; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
     const el = ref.current!
-    const ro = new ResizeObserver(() => onHeight(el.offsetHeight))
+    const report = () => onHeight(el.offsetHeight)
+    report()
+    const ro = new ResizeObserver(report)
     ro.observe(el)
     return () => ro.disconnect()
   }, [onHeight])
+  const sub = subtitle(project)
+  return (
+    <div
+      ref={ref}
+      className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))] font-ddc text-sand sm:px-6 md:pb-5 short:pt-2 short:pb-2"
+    >
+      <div className="min-w-0 text-center max-sm:w-full sm:text-left">
+        <p className="truncate text-[18px] leading-tight sm:text-[20px] wide:text-[24px]">{project.title}</p>
+        {sub && <p className="mt-0.5 truncate text-[12px] leading-tight tracking-[0.08em] uppercase opacity-70 wide:text-[14px]">{sub}</p>}
+      </div>
+      {children && <div className="flex gap-2 max-sm:w-full sm:gap-3">{children}</div>}
+    </div>
+  )
+}
+
+/**
+ * The description. Wide screens: a solid panel down the right side, beside the artwork. Tall
+ * screens: a drawer under the caption bar (up to about 40% of the screen; longer text scrolls in it).
+ * It never covers the artwork, so it can stay open while a video plays.
+ */
+function DescriptionSheet({
+  project,
+  side,
+  width,
+  onHeight,
+  transition,
+}: {
+  project: Project
+  side: boolean
+  width: number
+  onHeight: (h: number) => void
+  transition: Transition
+}) {
+  const isVideo = project.category === 'video'
+  const ref = useRef<HTMLElement>(null)
+  useLayoutEffect(() => {
+    const el = ref.current!
+    const report = () => onHeight(side ? 0 : el.offsetHeight)
+    report()
+    const ro = new ResizeObserver(report)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [onHeight, side])
+  const motionProps = side
+    ? { initial: { x: '100%' }, animate: { x: 0 }, exit: { x: '100%' } }
+    : { initial: { y: '100%' }, animate: { y: 0 }, exit: { y: '100%' } }
   return (
     <motion.section
       ref={ref}
       id="project-description"
       aria-label={`About ${project.title}`}
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 16 }}
-      transition={{ duration: 0.2, ease: 'easeOut' }}
-      className="pointer-events-none absolute inset-x-0 bottom-0 max-h-[45dvh] overflow-y-auto px-6 pt-20 pb-8 lg:px-10 lg:pb-10"
-      style={{
-        background:
-          'linear-gradient(to top, rgb(29 38 44 / 0.92) 0%, rgb(29 38 44 / 0.85) 55%, rgb(29 38 44 / 0) 100%)',
-      }}
+      {...motionProps}
+      transition={transition}
+      style={side ? { width } : undefined}
+      className={`absolute bottom-0 overflow-y-auto bg-ink font-ddc text-sand ${
+        side
+          ? 'top-0 right-0 border-l-2 border-sand/25 px-8 pt-[88px] pb-10 short:px-5 short:pt-[64px] wide:px-10'
+          : 'inset-x-0 max-h-[40dvh] border-t-2 border-sand/25 px-6 pt-4 pb-[max(20px,env(safe-area-inset-bottom))] md:px-10'
+      }`}
     >
-      <div className="pointer-events-auto max-w-[640px] cursor-text font-ddc text-[15px] leading-[1.6] text-sand select-text [text-shadow:0_1px_3px_rgb(0_0_0/0.6)]">
-        <h2 className="text-[20px] leading-[1.4]">{project.title}</h2>
+      <div className="cursor-text select-text">
+        {side && <h2 className="text-[24px] leading-[1.25] wide:text-[30px]">{project.title}</h2>}
         {isVideo ? (
-          <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-3">
-            <dt className="opacity-75">Duties</dt>
+          <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[14px] leading-[1.5] wide:text-[16px]">
+            <dt className="opacity-70">Duties</dt>
             <dd>{project.duties}</dd>
-            <dt className="opacity-75">Crew size</dt>
+            <dt className="opacity-70">Crew size</dt>
             <dd>{project.crewSize}</dd>
-            <dt className="opacity-75">Timeline</dt>
+            <dt className="opacity-70">Timeline</dt>
             <dd>{project.timeline}</dd>
           </dl>
         ) : (
-          <p>{project.discipline}</p>
+          side && <p className="mt-1 text-[14px] tracking-[0.06em] uppercase opacity-70 wide:text-[16px]">{project.discipline}</p>
         )}
-        {project.description && <p className="mt-3">{project.description}</p>}
+        {project.description && (
+          <p className="mt-4 max-w-[60ch] text-[16px] leading-[1.6] wide:text-[18px]">{project.description}</p>
+        )}
       </div>
     </motion.section>
+  )
+}
+
+/** DESCRIPTION's open / closed mark: a plus whose upright stroke turns flat to make a minus. */
+function PlusMinus({ open }: { open: boolean }) {
+  return (
+    <span aria-hidden="true" className="relative block size-[11px] flex-none">
+      <span className="absolute inset-x-0 top-1/2 h-[2px] -translate-y-1/2 bg-current" />
+      <span
+        className={`absolute inset-y-0 left-1/2 w-[2px] -translate-x-1/2 bg-current transition-transform duration-200 ${open ? 'rotate-90' : ''}`}
+      />
+    </span>
+  )
+}
+
+/** Opens in a new tab. */
+function ExternalIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 12 12" className="size-[11px] flex-none" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M3 1h8v8M11 1 1 11" />
+    </svg>
+  )
+}
+
+/** A file to download. */
+function DownloadIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 12 12" className="size-[11px] flex-none" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M6 0v8M2 4.5 6 8.5l4-4M1 11h10" />
+    </svg>
   )
 }

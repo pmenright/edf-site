@@ -1,6 +1,6 @@
 import { animate, motion, useMotionValue, useMotionValueEvent, useReducedMotion, useScroll } from 'motion/react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FocusEvent, type MouseEvent } from 'react'
-import { byCategory, resumeProject, type Category, type Project } from '../content'
+import { byCategory, withBase, type Category, type Project } from '../content'
 import { Hero } from './Hero'
 import { RAIL_EASE, RAIL_EXPAND_DURATION, RAIL_NARROW, RAIL_TRIGGER_SLACK } from '../lib/rail'
 import { NavColumn } from './Nav'
@@ -46,9 +46,6 @@ const viewWidth = () => document.documentElement.clientWidth
  * under it, and when that panel reaches the docked rail's edge the column collapses to the slim rail
  * (see .rail in index.css). Panels then slide under the rail.
  */
-/** The resume, opened by RESUME in the viewer (undefined until its pages exist). */
-const resume = resumeProject
-
 export function DesktopGallery({ category, onCategory, onOpen, startAtWork, startAtPanel }: GalleryProps) {
   const frame = useRef<HTMLDivElement>(null)
   const slot = useRef<HTMLDivElement>(null)
@@ -337,7 +334,7 @@ export function DesktopGallery({ category, onCategory, onOpen, startAtWork, star
             slotRef={slot}
             onRail={setRail}
             onHome={() => goTo(0, true)}
-            onResume={resume ? () => onOpen(resume) : undefined}
+            resumeHref={withBase('/about/')}
           />
           <div className="h-screen flex-none overflow-visible">
             <motion.div

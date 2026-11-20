@@ -10,14 +10,14 @@ interface HeroProps {
 export function Hero({ onScrollHint, className = '' }: HeroProps) {
   return (
     <section
-      className={`relative flex flex-none items-center justify-center px-5 py-2.5 sm:px-0 sm:py-5 strip:p-0 ${className}`}
+      className={`relative flex flex-none items-center justify-center px-[5%] pt-12 pb-5 short:pt-10 short:pb-3 strip:p-0 ${className}`}
     >
       <h1 className="sr-only">Enright Design Foundry: graphic design and videography. Austin based, veteran owned.</h1>
       <img
         src={heroLockup}
         alt=""
         fetchPriority="high"
-        className="h-[90%] w-[90%] object-contain sm:h-[70%] sm:w-auto md:h-auto md:w-[90%] strip:w-[60%]"
+        className="h-full w-full max-w-[1000px] object-contain strip:h-auto strip:w-[60%] strip:max-w-none"
       />
       {onScrollHint && (
         // The button is a larger, invisible hit area (62 x 74) around the 20 x 50 pill; the pill and arrow sit where they always did.
