@@ -67,7 +67,7 @@ The artwork is never altered: each frame's markup is copied verbatim into its ow
 ## Deploying
 
 `.github/workflows/deploy.yml` builds and publishes to GitHub Pages on every push to `main`.
-Set the repo's Pages source to "GitHub Actions". While testing at `USERNAME.github.io/REPO/`, the workflow builds with that sub-folder as the base path; once the custom domain is pointed here, change `BASE_PATH` in the workflow to `/`.
+Set the repo's Pages source to "GitHub Actions". The site is served from the custom domain (Settings > Pages > Custom domain: `enrightdesignfoundry.com`; DNS at Porkbun points the root at GitHub Pages' four addresses and `www` at `pmenright.github.io`), so the workflow builds with `BASE_PATH` `/`. For a test copy at `USERNAME.github.io/REPO/` without a custom domain, `BASE_PATH` would be the repo's sub-folder instead.
 
 ## Fonts
 

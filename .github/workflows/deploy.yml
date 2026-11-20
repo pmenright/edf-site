@@ -28,9 +28,10 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          # While testing at https://USERNAME.github.io/REPO/ the site lives in a sub-folder.
-          # After enrightdesignfoundry.com points here, change this to "/".
-          BASE_PATH: /${{ github.event.repository.name }}/
+          # The site lives at the root of enrightdesignfoundry.com. (For a test copy at
+          # https://USERNAME.github.io/REPO/ without the custom domain, this would be
+          # /${{ github.event.repository.name }}/ instead.)
+          BASE_PATH: /
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
