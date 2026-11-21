@@ -3,6 +3,7 @@
  * - Every demo / free-trial button opens a "glad you liked my work" popout with the contact form.
  * - The contact forms come to Jim instead of going to Webflow.
  * - The Resume link opens Jim's resume in a lightbox, like RESUME on the main site.
+ * - The videos wait to be scrolled to, then play from the start (see "videos" below).
  */
 (function () {
   'use strict'
@@ -370,9 +371,72 @@
     })
   }
 
+  // ---------- videos ----------
+  // The two background videos used to autoplay on load, so by the time a visitor scrolled down to
+  // one it was somewhere in the middle. Now each starts loading when it's about a screen away, plays
+  // from the start once half of it is on screen, and pauses and rewinds once it's fully off screen,
+  // so it starts over the next time it's reached. Its poster (behind it) is its first frame, so the
+  // hand-off from still to playing doesn't show. Visitors who ask for reduced motion get the still
+  // frame (Webflow paused all video for them already).
+  function setUpVideos() {
+    var videos = [].slice.call(document.querySelectorAll('video'))
+    if (!videos.length) return
+    var calm = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false }
+    var play = function (v) {
+      if (calm.matches) return
+      var p = v.play()
+      if (p && p.catch) p.catch(function () {})
+    }
+    if (!('IntersectionObserver' in window)) {
+      videos.forEach(play)
+      return
+    }
+    var near = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (!e.isIntersecting) return
+        e.target.preload = 'auto'
+        near.unobserve(e.target)
+      })
+    }, { rootMargin: '100% 0px' })
+    var inView = new Map()
+    var watch = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        var v = e.target
+        // Half of it on screen (or half the screen, for one taller than that).
+        var shown = e.isIntersecting && (e.intersectionRatio >= 0.5 || e.intersectionRect.height >= window.innerHeight * 0.5)
+        inView.set(v, shown)
+        if (shown) {
+          if (v.paused) play(v)
+        } else if (!e.isIntersecting) {
+          v.pause()
+          if (v.currentTime) v.currentTime = 0
+        }
+      })
+    }, { threshold: [0, 0.25, 0.5, 0.75, 1] })
+    videos.forEach(function (v) {
+      v.autoplay = false
+      v.pause()
+      near.observe(v)
+      watch.observe(v)
+    })
+    // Reduced motion switched while the page is open: stop, or pick up the one on screen. (After
+    // Webflow's own handler, which pauses every video without autoplay.)
+    if (calm.addEventListener) {
+      calm.addEventListener('change', function () {
+        setTimeout(function () {
+          videos.forEach(function (v) {
+            if (calm.matches) v.pause()
+            else if (inView.get(v)) play(v)
+          })
+        }, 0)
+      })
+    }
+  }
+
   function ready() {
     build()
     setUpIcons()
+    setUpVideos()
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ready)
   else ready()
