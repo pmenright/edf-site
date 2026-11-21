@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -49,10 +50,47 @@ function devPreview(): Plugin {
   }
 }
 
+/**
+ * Static pages kept in public/ (the Nsyte copy) link their own scripts and styles by plain names
+ * (assets/mirror.js), which Vite doesn't fingerprint. Browsers (and Cloudflare in front of the site)
+ * keep those for hours, so after an update a visitor could get the new page with the old script.
+ * After each build this adds a short fingerprint of each file's contents to those links
+ * (assets/mirror.js?v=3f9a1c2e): a changed file gets a new address and is fetched fresh; an unchanged
+ * one keeps its address and stays cached.
+ */
+const STATIC_PAGES = ['nsyte/index.html']
+function fingerprintStaticPages(): Plugin {
+  let outDir = ''
+  return {
+    name: 'fingerprint-static-pages',
+    apply: 'build',
+    configResolved(config) {
+      outDir = path.resolve(config.root, config.build.outDir)
+    },
+    closeBundle() {
+      for (const page of STATIC_PAGES) {
+        const file = path.join(outDir, page)
+        if (!fs.existsSync(file)) continue
+        const dir = path.dirname(file)
+        const html = fs.readFileSync(file, 'utf8').replace(
+          /(\b(?:href|src)=")((?:\.\/)?assets\/[^"?#]+\.(?:css|js))"/g,
+          (match, attr: string, ref: string) => {
+            const target = path.join(dir, ref)
+            if (!fs.existsSync(target)) return match
+            const hash = createHash('sha256').update(fs.readFileSync(target)).digest('hex').slice(0, 8)
+            return `${attr}${ref}?v=${hash}"`
+          },
+        )
+        fs.writeFileSync(file, html)
+      }
+    },
+  }
+}
+
 // BASE_PATH: "/" for the live site; the dev preview builds with "/dev/".
 export default defineConfig({
   base: process.env.BASE_PATH ?? '/',
-  plugins: [publicFolderIndex(), devPreview(), react(), tailwindcss()],
+  plugins: [publicFolderIndex(), devPreview(), fingerprintStaticPages(), react(), tailwindcss()],
   build: {
     rollupOptions: {
       // Two pages: the portfolio (/) and the about / resume page (/about/).
