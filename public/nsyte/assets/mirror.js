@@ -14,6 +14,8 @@
   var FORM_ENDPOINT = 'https://edf-forms.edfwork.workers.dev/'
   var TURNSTILE_SITE_KEY = '0x4AAAAAAGL_PX6r9BP90qAX'
   var EMAIL = 'pmenright@gmail.com'
+  // Shown in place of the form once a message has gone through.
+  var SENT_NOTE = "Thank you for reaching out. You'll be hearing from me."
   var POPOUT_TITLE = "I'm glad you liked my work. Let's talk about your project!"
   var ASSETS = (document.currentScript && document.currentScript.src || '').replace(/[^/]*$/, '')
 
@@ -116,7 +118,7 @@
         data.append('cf-turnstile-response', token)
         return fetch(FORM_ENDPOINT, { method: 'POST', body: data, headers: { Accept: 'application/json' } })
       })
-      .then(function (r) { if (!r.ok) throw new Error(r.status); show(form, true, 'Thanks!') })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); show(form, true, SENT_NOTE) })
       .catch(function () { show(form, false) })
       .then(function () {
         var box = form.querySelector('.mirror-turnstile')

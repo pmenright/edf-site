@@ -132,9 +132,16 @@
   margin: 12px 0;
 }
 
-/* After sending a form: just "Thanks!", without the page's green underline (it read as a link). */
+/* After sending a form: the note, without the page's green underline (it read as a link), lined up
+   with the form's heading (Webflow's default centers it across the form, which sat off-center under
+   the left-aligned heading). */
 .w-form-done .text-block-3 {
   border-bottom: 0;
+}
+.w-form-done {
+  padding-left: 0;
+  padding-right: 0;
+  text-align: left;
 }
 
 /* Resume lightbox (mirror.js): the resume's pages on a dark backdrop, like the main site's viewer,
