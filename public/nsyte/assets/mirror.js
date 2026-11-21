@@ -11,8 +11,8 @@
   // Form delivery: the EDF form relay (form-relay/ in the site's repo, a Cloudflare Worker that emails
   // Jim) and the site key of its Turnstile bot check. Both are public. Until they're filled in,
   // submitting opens the visitor's email app with the message already written.
-  var FORM_ENDPOINT = ''
-  var TURNSTILE_SITE_KEY = ''
+  var FORM_ENDPOINT = 'https://edf-forms.edfwork.workers.dev/'
+  var TURNSTILE_SITE_KEY = '0x4AAAAAAGL_PX6r9BP90qAX'
   var EMAIL = 'pmenright@gmail.com'
   var POPOUT_TITLE = "I'm glad you liked my work. Let's talk about your project!"
   var ASSETS = (document.currentScript && document.currentScript.src || '').replace(/[^/]*$/, '')

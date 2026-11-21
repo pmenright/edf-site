@@ -9,7 +9,7 @@
     "resume/full/page-03.png"
   ],
   "forms": {
-    "endpoint": "",
-    "turnstileSiteKey": ""
+    "endpoint": "https://edf-forms.edfwork.workers.dev/",
+    "turnstileSiteKey": "0x4AAAAAAGL_PX6r9BP90qAX"
   }
 }

@@ -53,7 +53,8 @@ npx wrangler deploy
 
 ### Part 3: switch the forms on
 
-Two public values, in two files:
+Done (November 2026): the relay is `https://edf-forms.edfwork.workers.dev/`. If it ever moves, it's
+two public values, in two files:
 
 - `src/content/site.json`: `"forms": { "endpoint": "<the relay's address>", "turnstileSiteKey": "<Site Key>" }`
 - `public/nsyte/assets/mirror.js`, near the top: `FORM_ENDPOINT` and `TURNSTILE_SITE_KEY`

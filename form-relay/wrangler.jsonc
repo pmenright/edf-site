@@ -6,6 +6,8 @@
   "compatibility_date": "2026-11-01",
   // Served at https://edf-forms.<your workers.dev name>.workers.dev
   "workers_dev": true,
+  // No extra per-version preview addresses: the one above is all the forms use.
+  "preview_urls": false,
   // Email Routing: can only send to Jim's verified Gmail, nowhere else.
   "send_email": [{ "name": "EMAIL", "destination_address": "pmenright@gmail.com" }],
   "vars": {
