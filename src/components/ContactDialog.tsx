@@ -2,13 +2,15 @@ import { useRef } from 'react'
 import { site } from '../content'
 import { useCopy } from '../lib/copy'
 import { POPUP_BUTTON, POPUP_BUTTON_FILLED, POPUP_BUTTON_OUTLINED } from '../lib/popup'
+import { ContactForm } from './ContactForm'
 import { Popup } from './Popup'
 
 const mail = `mailto:${site.email}`
 
 /**
- * CONTACT popup (opened from the rail's CONTACT, see src/lib/contact.ts): the email address as a
- * mail link, COPY (copies it) and EMAIL (opens the visitor's mail app). The box itself is Popup.tsx.
+ * CONTACT popup (opened from every CONTACT button, see src/lib/contact.ts): a message form
+ * (ContactForm.tsx), then the email address as a mail link, COPY (copies it) and EMAIL (opens the
+ * visitor's mail app), for anyone who'd rather write directly. The box itself is Popup.tsx.
  */
 export function ContactDialog({ onClose }: { onClose: () => void }) {
   // Start on the heading, so a stray Enter doesn't open the mail app; Tab goes on to the address.
@@ -30,9 +32,11 @@ export function ContactDialog({ onClose }: { onClose: () => void }) {
             How can I work with you?
           </h2>
           <p id="contact-blurb" className="mx-auto mt-4 max-w-[28em] text-[18px] leading-[1.4] text-balance max-sm:text-[16px]">
-            Send me an email and we can get started.
+            Send me a message and we can get started.
           </p>
-          <div className="mt-9 flex flex-wrap items-center justify-center gap-x-5 gap-y-4">
+          <ContactForm />
+          <p className="mt-10 font-ddc text-[14px] tracking-[0.12em] uppercase">Or email me directly</p>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-4">
             <a
               href={mail}
               className="text-[20px] tracking-[0.04em] underline decoration-sand/40 decoration-2 underline-offset-[6px] transition-colors hover:decoration-sand focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sand max-sm:text-[18px]"

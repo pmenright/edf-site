@@ -7,5 +7,9 @@
     "resume/full/page-01.png",
     "resume/full/page-02.png",
     "resume/full/page-03.png"
-  ]
+  ],
+  "forms": {
+    "endpoint": "",
+    "turnstileSiteKey": ""
+  }
 }

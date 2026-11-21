@@ -429,6 +429,14 @@
   .popup::backdrop {
     background: transparent;
   }
+  /* The contact form's fields (ContactForm.tsx): browsers' autofill keeps the popup's ink and sand. */
+  .contact-field:-webkit-autofill,
+  .contact-field:-webkit-autofill:hover,
+  .contact-field:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--color-sand);
+    box-shadow: 0 0 0 1000px var(--color-ink) inset;
+    caret-color: var(--color-sand);
+  }
   .popup-panel {
     max-height: calc(100dvh - 48px);
     overflow-y: auto;

@@ -43,6 +43,9 @@ export function Popup({ labelledBy, describedBy, initialFocus, panelClassName, o
     const onWheel = (e: WheelEvent) => {
       const box = panel.current
       if (box && box.contains(e.target as Node) && box.scrollHeight > box.clientHeight) return
+      // A message box with more text than it shows scrolls itself.
+      const field = (e.target as HTMLElement).closest?.('textarea')
+      if (field && field.scrollHeight > field.clientHeight) return
       e.preventDefault()
     }
     d.addEventListener('wheel', onWheel, { passive: false })
@@ -90,6 +93,7 @@ export function Popup({ labelledBy, describedBy, initialFocus, panelClassName, o
       onKeyDown={(e) => {
         const target = e.target as HTMLElement
         if (!SCROLL_KEYS.has(e.key)) return
+        if (target.closest('input, textarea, select, [contenteditable="true"]')) return // typing, and moving the caret
         if (e.key === ' ' && target.closest('button, a')) return // space still presses buttons
         if (panel.current && panel.current.scrollHeight > panel.current.clientHeight) return
         e.preventDefault()

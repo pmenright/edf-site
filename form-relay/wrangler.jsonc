@@ -1,0 +1,21 @@
+// EDF form relay (src/index.js). Deploy from this folder: `npx wrangler deploy`.
+// The Turnstile secret is not in this file: set it once with `npx wrangler secret put TURNSTILE_SECRET`.
+{
+  "name": "edf-forms",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-01",
+  // Served at https://edf-forms.<your workers.dev name>.workers.dev
+  "workers_dev": true,
+  // Email Routing: can only send to Jim's verified Gmail, nowhere else.
+  "send_email": [{ "name": "EMAIL", "destination_address": "pmenright@gmail.com" }],
+  "vars": {
+    // Must be an address on the forms subdomain (Email Routing → Settings → Subdomains → "forms").
+    "FROM_ADDRESS": "website@forms.enrightdesignfoundry.com",
+    "FROM_NAME": "EDF website",
+    "TO_ADDRESS": "pmenright@gmail.com",
+    // The pages allowed to post (the live site, and the dev server for testing).
+    "ALLOWED_ORIGINS": "https://enrightdesignfoundry.com,https://www.enrightdesignfoundry.com,http://localhost:5173"
+  },
+  // No request logs kept by Cloudflare for this Worker (it never logs messages itself either).
+  "observability": { "enabled": false }
+}

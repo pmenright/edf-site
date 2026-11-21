@@ -119,6 +119,19 @@
   }
 }
 
+/* The forms' bot trap (mirror.js): a field people never see or reach; bots fill it in. */
+.mirror-hp {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+/* Cloudflare's bot check, by the submit button: empty (no height) unless it needs a click. */
+.mirror-turnstile:not(:empty) {
+  margin: 12px 0;
+}
+
 /* After sending a form: just "Thanks!", without the page's green underline (it read as a link). */
 .w-form-done .text-block-3 {
   border-bottom: 0;

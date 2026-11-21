@@ -1,17 +1,18 @@
 /*
  * Portfolio copy of nsyte.com (Enright Design Foundry).
  * - Every demo / free-trial button opens a "glad you liked my work" popout with the contact form.
- * - The contact forms come to Jim instead of going to Webflow.
+ * - The contact forms come to Jim instead of going to Webflow (through the EDF form relay, see below).
  * - The Resume link opens Jim's resume in a lightbox, like RESUME on the main site.
  * - The videos wait to be scrolled to, then play from the start (see "videos" below).
  */
 (function () {
   'use strict'
 
-  // Form delivery. Paste a form relay endpoint here to have messages arrive in the inbox directly.
-  // Left empty, submitting opens the visitor's email app with the message already filled in.
+  // Form delivery: the EDF form relay (form-relay/ in the site's repo, a Cloudflare Worker that emails
+  // Jim) and the site key of its Turnstile bot check. Both are public. Until they're filled in,
+  // submitting opens the visitor's email app with the message already written.
   var FORM_ENDPOINT = ''
-  var FORM_ACCESS_KEY = '' // only some relays need this (it is safe to be public)
+  var TURNSTILE_SITE_KEY = ''
   var EMAIL = 'pmenright@gmail.com'
   var POPOUT_TITLE = "I'm glad you liked my work. Let's talk about your project!"
   var ASSETS = (document.currentScript && document.currentScript.src || '').replace(/[^/]*$/, '')
@@ -26,6 +27,7 @@
   function fieldsOf(form) {
     var out = []
     form.querySelectorAll('input, textarea, select').forEach(function (el) {
+      if (el.hasAttribute('data-mirror-skip')) return
       if (el.type === 'submit' || el.type === 'button' || (el.type === 'hidden' && !el.value)) return
       if ((el.type === 'checkbox' || el.type === 'radio') && !el.checked) return
       out.push({ label: labelFor(form, el), value: el.value, type: el.type })
@@ -43,6 +45,7 @@
       done.style.display = 'block'
       fail.style.display = 'none'
     } else {
+      fail.firstElementChild.textContent = "That didn't send. Please try again, or email me at " + EMAIL + '.'
       fail.style.display = 'block'
     }
   }
@@ -55,21 +58,97 @@
     show(form, true, 'Thanks!')
   }
 
-  function sendByRelay(form, fields) {
-    var data = new FormData()
-    if (FORM_ACCESS_KEY) data.append('access_key', FORM_ACCESS_KEY)
-    data.append('subject', 'Portfolio (Nsyte) message')
-    fields.forEach(function (f) {
-      data.append(f.label, f.value)
-      if (f.type === 'email') data.append('email', f.value) // lets you hit Reply
+  // Cloudflare Turnstile, the bot check: its script loads the first time someone starts on a form
+  // (so other visitors never fetch it), and each send renders a fresh check that stays invisible
+  // unless Cloudflare wants a click. Its token goes along with the message for the relay to verify.
+  var turnstileLoading = null
+  function loadTurnstile() {
+    if (turnstileLoading) return turnstileLoading
+    turnstileLoading = new Promise(function (resolve, reject) {
+      window.mirrorTurnstileLoaded = function () { resolve(window.turnstile) }
+      var script = document.createElement('script')
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=mirrorTurnstileLoaded'
+      script.async = true
+      script.onerror = function () {
+        turnstileLoading = null
+        reject(new Error('turnstile did not load'))
+      }
+      document.head.appendChild(script)
     })
+    return turnstileLoading
+  }
+
+  function humanCheck(form) {
+    return loadTurnstile().then(function (turnstile) {
+      return new Promise(function (resolve, reject) {
+        var box = form.querySelector('.mirror-turnstile')
+        if (box.dataset.widget) turnstile.remove(box.dataset.widget)
+        // Long enough to finish a click-through challenge; it fails the send only if it never answers.
+        var timer = setTimeout(function () { reject(new Error('turnstile timed out')) }, 120000)
+        box.dataset.widget = turnstile.render(box, {
+          sitekey: TURNSTILE_SITE_KEY,
+          appearance: 'interaction-only',
+          theme: 'light',
+          callback: function (token) { clearTimeout(timer); resolve(token) },
+          'error-callback': function () { clearTimeout(timer); reject(new Error('turnstile error')) },
+        })
+      })
+    })
+  }
+
+  function sendByRelay(form, fields) {
     var button = form.querySelector('[type="submit"]')
     var label = button && button.value
-    if (button) button.value = button.getAttribute('data-wait') || 'Please wait...'
-    fetch(FORM_ENDPOINT, { method: 'POST', body: data, headers: { Accept: 'application/json' } })
+    if (button) {
+      button.value = button.getAttribute('data-wait') || 'Please wait...'
+      button.disabled = true
+    }
+    var data = new FormData()
+    data.append('_form', form.closest('.mirror-popout') ? 'Nsyte popout' : 'Nsyte contact')
+    fields.forEach(function (f) {
+      data.append(f.label, f.value)
+      if (f.type === 'email') data.append('_replyto', f.value) // so Reply goes to the visitor
+    })
+    var trap = form.querySelector('input[name="website"]')
+    data.append('website', trap ? trap.value : '')
+    humanCheck(form)
+      .then(function (token) {
+        data.append('cf-turnstile-response', token)
+        return fetch(FORM_ENDPOINT, { method: 'POST', body: data, headers: { Accept: 'application/json' } })
+      })
       .then(function (r) { if (!r.ok) throw new Error(r.status); show(form, true, 'Thanks!') })
       .catch(function () { show(form, false) })
-      .then(function () { if (button) button.value = label })
+      .then(function () {
+        var box = form.querySelector('.mirror-turnstile')
+        if (window.turnstile && box && box.dataset.widget) {
+          window.turnstile.remove(box.dataset.widget)
+          delete box.dataset.widget
+        }
+        if (button) {
+          button.value = label
+          button.disabled = false
+        }
+      })
+  }
+
+  // Every form gets a hidden "website" field that people never see (bots fill it in, and the relay
+  // drops those), and, once the relay is set up, a spot for the bot check by its submit button.
+  function prepareForms() {
+    document.querySelectorAll('.w-form form').forEach(function (form) {
+      if (form.querySelector('.mirror-hp')) return
+      var trap = document.createElement('div')
+      trap.className = 'mirror-hp'
+      trap.setAttribute('aria-hidden', 'true')
+      trap.innerHTML = '<label>Leave this empty <input type="text" name="website" tabindex="-1" autocomplete="off" data-mirror-skip></label>'
+      form.appendChild(trap)
+      if (FORM_ENDPOINT && TURNSTILE_SITE_KEY) {
+        var box = document.createElement('div')
+        box.className = 'mirror-turnstile'
+        var submit = form.querySelector('[type="submit"]')
+        form.insertBefore(box, submit || null)
+        form.addEventListener('focusin', function () { loadTurnstile().catch(function () {}) }, { once: true })
+      }
+    })
   }
 
   // Runs before Webflow's own form handler and stops it, so nothing is sent to Webflow.
@@ -79,7 +158,7 @@
     e.preventDefault()
     e.stopImmediatePropagation()
     var fields = fieldsOf(form)
-    if (FORM_ENDPOINT) sendByRelay(form, fields)
+    if (FORM_ENDPOINT && TURNSTILE_SITE_KEY) sendByRelay(form, fields)
     else sendByEmailApp(form, fields)
   }, true)
 
@@ -435,6 +514,7 @@
 
   function ready() {
     build()
+    prepareForms()
     setUpIcons()
     setUpVideos()
   }

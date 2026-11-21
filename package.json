@@ -12,7 +12,8 @@
     "buttons": "node scripts/build-buttons.mjs",
     "resume": "node scripts/build-resume.mjs",
     "add-media": "node scripts/add-media.mjs",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "test:forms": "node --test form-relay/test/relay.test.mjs"
   },
   "dependencies": {
     "@fontsource-variable/league-spartan": "^5.3.0",
