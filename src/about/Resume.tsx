@@ -1,5 +1,6 @@
 import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { projectById, site, withBase } from '../content'
+import { openContact } from '../lib/contact'
 import { useCopy } from '../lib/copy'
 import { openResume } from '../lib/resume'
 import { showProject } from '../lib/viewer'
@@ -25,6 +26,9 @@ export function ResumeBoard() {
           {resume.name} <span aria-hidden="true">·</span> {resume.title} <span aria-hidden="true">·</span> {resume.tagline}
         </p>
         <PdfButton />
+        <button type="button" aria-haspopup="dialog" onClick={openContact} className="resume-pdf cursor-pointer">
+          Contact
+        </button>
       </header>
       <div className="resume-sheet">
         <Card area="sum" title="Summary">

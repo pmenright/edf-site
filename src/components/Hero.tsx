@@ -55,7 +55,30 @@ export function Hero({ onScrollHint, onContact, className = '', inert = false }:
  * it's twice the lockup-to-button gap below CONTACT, it all scrolls on together and the hero leaves.
  * Scrolling back plays it in reverse. That's position: sticky (.hero-pinned in index.css); centering
  * it needs the pair's height, measured here into --hero-g.
+ *
+ * The hand-off is eased, so the pair doesn't jump from still to full speed: over a stretch of
+ * scrolling (EASE_SPAN of the screen height, centered on the point where sticky lets go) it starts
+ * slowly and picks up to the page's speed, its speed rising evenly from nothing. It ends up exactly
+ * where sticky alone would put it, so the gap still closes to the same 40px. The lift on top of
+ * sticky is easeLift(); Chrome and Safari run it straight off the scroll position (a scroll-driven
+ * animation, .hero-pinned[data-ease] in index.css), and other browsers (Firefox) get it from a
+ * scroll handler here.
  */
+const EASE_SPAN = 0.32
+/** The ease never takes more than this share of the scroll before the release, so the pair holds still a moment first. */
+const EASE_MAX_SHARE = 0.8
+/** Shorter than this (phones on their side, with no room to spare): no ease. */
+const EASE_MIN = 24
+
+/** How far above its sticky spot the pair sits, `u` px into an ease `span` px long. */
+function easeLift(u: number, span: number) {
+  if (u <= 0 || u >= span) return 0
+  const v = u < span / 2 ? u : span - u
+  return (v * v) / (2 * span)
+}
+
+const scrollTimelines = typeof CSS !== 'undefined' && CSS.supports('animation-timeline: scroll()')
+
 function PinnedHero({ onContact, className, inert }: { onContact: () => void; className: string; inert: boolean }) {
   const section = useRef<HTMLElement>(null)
   const group = useRef<HTMLDivElement>(null)
@@ -63,11 +86,45 @@ function PinnedHero({ onContact, className, inert }: { onContact: () => void; cl
     const s = section.current
     const g = group.current
     if (!s || !g) return
-    const measure = () => s.style.setProperty('--hero-g', `${g.offsetHeight}px`)
+    let ease: { start: number; span: number } | null = null
+    let frame = 0
+    const lift = () => {
+      frame = 0
+      const y = ease ? easeLift(window.scrollY - ease.start, ease.span) : 0
+      g.style.translate = y ? `0 ${-y}px` : ''
+    }
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(lift)
+    }
+    const measure = () => {
+      const height = g.offsetHeight
+      s.style.setProperty('--hero-g', `${height}px`)
+      // Where sticky lets go: the pair's bottom meets the bottom of the hero's content box.
+      const pin = parseFloat(getComputedStyle(g).top) || 0
+      const pad = parseFloat(getComputedStyle(s).paddingBottom) || 0
+      const release = s.getBoundingClientRect().top + window.scrollY + s.offsetHeight - pad - height - pin
+      const span = Math.min(window.innerHeight * EASE_SPAN, release * 2 * EASE_MAX_SHARE)
+      ease = span >= EASE_MIN ? { start: release - span / 2, span } : null
+      if (ease) {
+        s.dataset.ease = ''
+        s.style.setProperty('--ease-start', `${ease.start}px`)
+        s.style.setProperty('--ease-end', `${ease.start + ease.span}px`)
+        s.style.setProperty('--ease-span', `${ease.span}px`)
+      } else {
+        delete s.dataset.ease
+      }
+      if (!scrollTimelines) lift()
+    }
     measure()
     const ro = new ResizeObserver(measure)
     ro.observe(g)
-    return () => ro.disconnect()
+    ro.observe(s)
+    if (!scrollTimelines) window.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('scroll', onScroll)
+      cancelAnimationFrame(frame)
+    }
   }, [])
   return (
     <section ref={section} inert={inert} className={`hero-pinned relative flex-none ${className}`}>

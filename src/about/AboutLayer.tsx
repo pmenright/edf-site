@@ -10,6 +10,12 @@ export type AboutSlide = 0 | 1
 /** How long About / the resume take to slide in over the work, or back out (seconds). */
 export const ABOUT_SLIDE_DURATION = 0.35
 const SLIDE_EASE = [0.65, 0, 0.35, 1] as const
+/**
+ * Desktop: DESIGN / VIDEO from About or the resume push it out the way they push each other (the
+ * same timing as DESIGN <-> VIDEO in DesktopGallery.tsx): DESIGN drops in from above and pushes it
+ * down, VIDEO rises from below and pushes it up.
+ */
+export const PUSH_DURATION = 0.25
 
 interface RowProps {
   open: boolean
@@ -19,6 +25,8 @@ interface RowProps {
   shift: MotionValue<number>
   /** Slide in from the right when it appears (not when the page opens straight onto it). */
   appear: boolean
+  /** Which way it leaves when it closes: pushed down by DESIGN coming in from above, or up by VIDEO from below. */
+  exit: 'up' | 'down'
   rowRef: (el: HTMLDivElement | null) => void
   /** The scroll hint on About: on to the resume. */
   onNext: () => void
@@ -26,23 +34,37 @@ interface RowProps {
 
 /**
  * Desktop: About and the resume, side by side, as the strip's third side (DesktopGallery.tsx). RESUME
- * slides them in from the right, the way DESIGN and VIDEO slide in from above and below, and DESIGN or
- * VIDEO slides them back out. The page scrolls through them like the work: down or right on to the
+ * slides them in from the right; DESIGN or VIDEO pushes them out the way those two push each other
+ * (DESIGN in from above, pushing them down; VIDEO in from below, pushing them up; see PUSH_DURATION). The page scrolls through them like the work: down or right on to the
  * resume, and back up past About to the nav column and the hero. The rail docks beside them.
  * A strip of ink runs under the rail on their left, so nothing shows through at its edge.
  */
-export function AboutRow({ open, slideW, shift, appear, rowRef, onNext }: RowProps) {
+export function AboutRow({ open, slideW, shift, appear, exit, rowRef, onNext }: RowProps) {
   const reduce = useReducedMotion()
   const enter = useMotionValue(open && !appear ? 0 : slideW)
+  /** The push out, up or down. */
+  const drop = useMotionValue(0)
   const x = useTransform(() => shift.get() + enter.get())
   const width = useRef(slideW)
+  const leave = useRef(exit)
   useLayoutEffect(() => {
     width.current = slideW
+    leave.current = exit
   })
   useLayoutEffect(() => {
-    const a = animate(enter, open ? 0 : width.current, { duration: reduce ? 0 : ABOUT_SLIDE_DURATION, ease: SLIDE_EASE })
+    if (open) {
+      // Reopened while it was still being pushed out: come back in from the right as usual.
+      if (drop.get() !== 0) {
+        drop.set(0)
+        enter.set(width.current)
+      }
+      const a = animate(enter, 0, { duration: reduce ? 0 : ABOUT_SLIDE_DURATION, ease: SLIDE_EASE })
+      return () => a.stop()
+    }
+    const h = window.innerHeight
+    const a = animate(drop, leave.current === 'up' ? -h : h, { duration: reduce ? 0 : PUSH_DURATION, ease: 'easeInOut' })
     return () => a.stop()
-  }, [open, enter, reduce])
+  }, [open, enter, drop, reduce])
   return (
     <motion.div
       ref={rowRef}
@@ -50,7 +72,7 @@ export function AboutRow({ open, slideW, shift, appear, rowRef, onNext }: RowPro
       role="region"
       aria-label="About and resume"
       inert={!open}
-      style={{ x, width: 2 * slideW }}
+      style={{ x, y: drop, width: 2 * slideW }}
       className="about-layer absolute top-0 left-0 z-[5] flex h-screen bg-ink before:absolute before:inset-y-0 before:right-full before:w-24 before:bg-ink"
     >
       <section data-slide="0" aria-label="About" className="relative h-screen flex-none" style={{ width: slideW }}>

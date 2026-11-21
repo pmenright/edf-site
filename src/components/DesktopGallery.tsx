@@ -8,7 +8,7 @@ import {
   type AnimationPlaybackControls,
 } from 'motion/react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FocusEvent, type MouseEvent } from 'react'
-import { AboutRow, ABOUT_SLIDE_DURATION, type AboutSlide } from '../about/AboutLayer'
+import { AboutRow, ABOUT_SLIDE_DURATION, PUSH_DURATION, type AboutSlide } from '../about/AboutLayer'
 import { byCategory, type Category, type Project } from '../content'
 import type { AboutState } from '../hooks/useAboutHash'
 import { Hero } from './Hero'
@@ -126,8 +126,20 @@ export function DesktopGallery({
   // scrolled back past that spot). null = not decided yet (first measure: jump, don't animate).
   const docked = useRef<boolean | null>(null)
 
+  /*
+    The latest measurements, and (in update) the live page scroll. Placing the strip always reads
+    these, never a render's copy or the scroll motion value, which only catches up on the next scroll
+    event: when a side switch jumps the page scroll, re-placing from either stale number put the strip
+    hundreds of pixels off for a frame (a sideways flash).
+  */
+  const dimsRef = useRef(dims)
+  useLayoutEffect(() => {
+    dimsRef.current = dims
+  }, [dims])
+
   /** Put the strip at `offset` pixels along (and pin / dock the rail to match). */
   const place = useCallback((offset: number) => {
+    const dims = dimsRef.current
     x.set(-offset)
     resumeSlide.current?.toggleAttribute('data-settled', offset >= dims.travel - 1)
     // Past the nav column's own position: hold it at the left edge.
@@ -141,22 +153,19 @@ export function DesktopGallery({
     docked.current = want
     if (first) squeeze.set(want ? 1 : 0)
     else animate(squeeze, want ? 1 : 0, { duration: reduce ? 0 : RAIL_EXPAND_DURATION, ease: RAIL_EASE })
-  }, [dims, x, pin, squeeze, reduce])
+  }, [x, pin, squeeze, reduce])
 
   const update = useCallback(() => {
     if (gliding.current) return
-    const range = dims.height - window.innerHeight
-    const progress = range > 0 ? Math.min(1, Math.max(0, scrollY.get() / range)) : 0
-    place(progress * dims.travel)
-  }, [dims, scrollY, place])
+    const { height, travel } = dimsRef.current
+    const range = height - window.innerHeight
+    const progress = range > 0 ? Math.min(1, Math.max(0, window.scrollY / range)) : 0
+    place(progress * travel)
+  }, [place])
 
   useMotionValueEvent(scrollY, 'change', update)
-  useLayoutEffect(update, [update])
-
-  const dimsRef = useRef(dims)
-  useLayoutEffect(() => {
-    dimsRef.current = dims
-  }, [dims])
+  // Re-placed whenever the measurements change too.
+  useLayoutEffect(update, [update, dims])
 
   /** Pixels of page scroll per pixel the strip moves. */
   const ratio = useCallback(() => {
@@ -364,11 +373,15 @@ export function DesktopGallery({
     sideways by the same amount, so it still shows what it showed; then it slides away as the new
     side slides in (from below or above, or from the right for About). Once it's out of sight its
     nudge is removed. From nearer the hero than that start, nothing moves for DESIGN / VIDEO, and for
-    About the strip glides on to it while it slides in.
+    About the strip glides on to it while it slides in. Leaving About or the resume, DESIGN / VIDEO
+    push it out like they push each other: DESIGN drops in from above (pushing it down), VIDEO rises
+    from below (pushing it up), the new row's own y (dropDesign / dropVideo) against the About row's.
   */
   const shiftDesign = useMotionValue(0)
   const shiftVideo = useMotionValue(0)
   const shiftAbout = useMotionValue(0)
+  const dropDesign = useMotionValue(0)
+  const dropVideo = useMotionValue(0)
   const prevSide = useRef(side)
   /** The page opened straight onto About ("/#about"): it's just there, it doesn't slide in. */
   const openedOnAbout = useRef(side === 'about')
@@ -387,6 +400,12 @@ export function DesktopGallery({
     gliding.current = null
     // Switched back mid-slide: glide the returning side home along with the slide.
     if (incoming.get() !== 0) animate(incoming, 0, { duration: reduce ? 0 : 0.25, ease: 'easeInOut' })
+    // Leaving About / the resume: the new row pushes in from above (DESIGN) or below (VIDEO).
+    if (prev === 'about' && side !== 'about') {
+      const drop = side === 'design' ? dropDesign : dropVideo
+      drop.set(side === 'design' ? -window.innerHeight : window.innerHeight)
+      animate(drop, 0, { duration: reduce ? 0 : PUSH_DURATION, ease: 'easeInOut' })
+    }
     const offset = -x.get()
     // The new side has its own length: measure it now, before working out any scroll position, so
     // the page height and the scroll-to-strip mapping are the new side's from this frame on.
@@ -422,7 +441,7 @@ export function DesktopGallery({
     }
     settle.current = window.setTimeout(() => outgoing.set(0), reduce ? 0 : ABOUT_SLIDE_DURATION * 1000 + 50)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [side, measureFor, place, ratio, reduce, shiftDesign, shiftVideo, shiftAbout, x])
+  }, [side, measureFor, place, ratio, reduce, shiftDesign, shiftVideo, shiftAbout, dropDesign, dropVideo, x])
   useEffect(() => () => gliding.current?.stop(), [])
 
   // RESUME pressed (or a link followed) while the about / resume slides are already showing: glide
@@ -578,7 +597,7 @@ export function DesktopGallery({
                   aria-label={cat === 'design' ? 'Design work' : 'Video work'}
                   aria-hidden={cat !== category}
                   inert={cat !== category}
-                  style={{ x: cat === 'design' ? shiftDesign : shiftVideo }}
+                  style={{ x: cat === 'design' ? shiftDesign : shiftVideo, y: cat === 'design' ? dropDesign : dropVideo }}
                   className="flex h-screen"
                 >
                   {byCategory[cat].map((p, i) => (
@@ -599,6 +618,7 @@ export function DesktopGallery({
                 slideW={slideW}
                 shift={shiftAbout}
                 appear={!openedOnAbout.current}
+                exit={category === 'video' ? 'up' : 'down'}
                 rowRef={(el) => {
                   rows.current.about = el
                   resumeSlide.current = el?.querySelector<HTMLElement>('[data-slide="1"]') ?? null
