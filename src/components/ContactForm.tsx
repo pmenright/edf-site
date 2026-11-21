@@ -44,7 +44,9 @@ export function ContactForm() {
     try {
       data.set('_form', 'Portfolio contact')
       data.set('cf-turnstile-response', await humanCheck(check.current!, turnstileSiteKey, 'dark'))
-      const res = await fetch(endpoint, { method: 'POST', body: data, headers: { Accept: 'application/json' } })
+      // Sent URL-encoded (a plain form post): read the same way from every browser.
+      const body = new URLSearchParams([...data].flatMap(([key, value]) => (typeof value === 'string' ? [[key, value]] : [])))
+      const res = await fetch(endpoint, { method: 'POST', body, headers: { Accept: 'application/json' } })
       if (!res.ok) throw new Error(String(res.status))
       form.current?.reset()
       setStatus('sent')

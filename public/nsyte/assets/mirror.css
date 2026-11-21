@@ -31,15 +31,11 @@
 .mirror-popout__panel {
   position: relative;
   box-sizing: border-box;
-  display: grid;
-  grid-template-columns: 170px 1fr;
-  align-items: center;
-  column-gap: 36px;
+  display: flex;
+  flex-direction: column;
   width: min(780px, 100%);
   max-height: calc(100dvh - 40px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 52px 40px 36px;
+  overflow: hidden;
   background: #f1f1e7;
   border: 3px solid #1e2837;
   border-radius: 20px;
@@ -48,6 +44,18 @@
 }
 .mirror-popout.is-open .mirror-popout__panel {
   transform: none;
+}
+/* The panel's contents scroll inside it, under the close button, which stays put in the corner. */
+.mirror-popout__scroll {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  align-items: center;
+  column-gap: 36px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 52px 40px 36px;
 }
 .mirror-popout__brand {
   display: grid;
@@ -68,9 +76,11 @@
   margin: 0 0 24px;
   font-size: 2em;
   line-height: 1.15;
+  color: #1e2837; /* the page's near-black, like the panel's border and close button */
 }
 .mirror-popout__close {
   position: absolute;
+  z-index: 1;
   top: 10px;
   right: 12px;
   width: 44px;
@@ -90,26 +100,61 @@
   width: auto; /* the site sizes this form to the screen (85-90vw) on phones; here it fills the panel */
   margin: 0;
 }
-/* Narrow screens: logo on top, then the headline and form */
+/* Narrow screens: the logo and the headline side by side (logo on the left), the form below them.
+   The body's box steps aside (display: contents) so its headline and form join the grid. */
 @media screen and (max-width: 700px) {
-  .mirror-popout__panel {
-    grid-template-columns: 1fr;
-    row-gap: 20px;
+  .mirror-popout__scroll {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: "logo title" "form form";
+    column-gap: 18px;
+    row-gap: 22px;
+    padding-top: 58px;
   }
   .mirror-popout__brand {
+    grid-area: logo;
+    align-self: center;
     border-right: 0;
     padding-right: 0;
   }
   .mirror-popout__brand img {
-    width: 84px;
+    width: 64px;
+  }
+  .mirror-popout__body {
+    display: contents;
+  }
+  .mirror-popout__title.heading-6 {
+    grid-area: title;
+    margin: 0;
+    font-size: 1.6em;
+  }
+  .mirror-popout__body > :not(.mirror-popout__title) {
+    grid-area: form;
+    min-width: 0;
   }
 }
 @media screen and (max-width: 479px) {
-  .mirror-popout__panel {
-    padding: 52px 22px 28px;
+  .mirror-popout__scroll {
+    padding: 56px 22px 28px;
+    column-gap: 14px;
+  }
+  .mirror-popout__brand img {
+    width: 52px;
   }
   .mirror-popout__title.heading-6 {
-    font-size: 1.6em;
+    font-size: 1.3em;
+  }
+}
+
+/* The forms' send button: as wide as its words need (it reads "Please wait..." while sending),
+   never narrower than the site made it. */
+.w-form .submit-button {
+  width: max-content;
+  min-width: 100px;
+  white-space: nowrap;
+}
+@media screen and (min-width: 1440px) {
+  .w-form .submit-button {
+    min-width: 125px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -392,8 +437,52 @@
 .mirror-contact__links .mirror-footer-link.heading-6:focus-visible {
   transform: scale(1.05);
 }
+/* Phones and small tablets (the footer stacks at 767px): Jim's logotype lockup instead of the
+   anvil logo, centered, in the page's green (his file, shown through a mask in that color; the file
+   itself is untouched). Under it Design and Video in the page's near-black, then the bar, then the
+   email address. */
+.mirror-footer-lockup {
+  display: none;
+}
 @media screen and (max-width: 767px) {
-  .mirror-footer-logo { width: 100px; }
+  .mirror-contact {
+    --mirror-lockup-w: min(240px, 62vw);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    text-align: center;
+  }
+  .mirror-footer-logo {
+    display: none;
+  }
+  .mirror-footer-lockup {
+    display: block;
+    width: var(--mirror-lockup-w);
+    aspect-ratio: 67.1 / 23.1;
+    background-color: #008664;
+    -webkit-mask: url("edf-logotype-lockup.svg") center / contain no-repeat;
+    mask: url("edf-logotype-lockup.svg") center / contain no-repeat;
+  }
+  .mirror-contact__logo {
+    order: 1;
+    margin: 14px 0 18px;
+  }
+  .mirror-contact__links.text-block-2 {
+    order: 2;
+    width: var(--mirror-lockup-w);
+    margin-top: 0;
+    padding: 0 0 14px;
+    border-top: 0;
+    border-bottom: 7px solid #1e2837;
+  }
+  .mirror-contact__links .mirror-footer-link.heading-6 {
+    color: #1e2837;
+  }
+  .mirror-contact > .text-block-2:not(.mirror-contact__links) {
+    order: 3;
+    margin-top: 16px;
+  }
 }
 
 /* One content column for every section below the hero (Jim, 2026-11-13). Webflow sized each block

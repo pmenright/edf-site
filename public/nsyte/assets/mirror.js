@@ -105,7 +105,8 @@
       button.value = button.getAttribute('data-wait') || 'Please wait...'
       button.disabled = true
     }
-    var data = new FormData()
+    // Sent URL-encoded (a plain form post): simple, and read the same by every browser and the relay.
+    var data = new URLSearchParams()
     data.append('_form', form.closest('.mirror-popout') ? 'Nsyte popout' : 'Nsyte contact')
     fields.forEach(function (f) {
       data.append(f.label, f.value)
@@ -185,8 +186,11 @@
     popout.innerHTML =
       '<div class="mirror-popout__panel" role="dialog" aria-modal="true" aria-labelledby="mirror-popout-title">' +
       '<button type="button" class="mirror-popout__close" aria-label="Close">×</button>' +
+      // Only this layer scrolls, so the close button stays put in the corner.
+      '<div class="mirror-popout__scroll">' +
       '<div class="mirror-popout__brand"><img alt="Enright Design Foundry" width="67" height="82"></div>' +
       '<div class="mirror-popout__body"><h2 id="mirror-popout-title" class="heading-6 mirror-popout__title"></h2></div>' +
+      '</div>' +
       '</div>'
     panel = popout.firstElementChild
     panel.querySelector('.mirror-popout__brand img').src = ASSETS + 'edf-logo.svg'
@@ -220,6 +224,7 @@
     form.style.display = ''
     panel.querySelector('.w-form-done').style.display = 'none'
     panel.querySelector('.w-form-fail').style.display = 'none'
+    panel.querySelector('.mirror-popout__scroll').scrollTop = 0
 
     clearTimeout(hideTimer) // reopening right after closing must not be undone by the close
     lastFocus = document.activeElement

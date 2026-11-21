@@ -90,6 +90,32 @@ test('a good message is checked with Turnstile and emailed', async () => {
   assert.doesNotMatch(m.text, /tok|website|_form/)
 })
 
+test('multipart as Safari / Chrome send it (mixed-case boundary) is read', async () => {
+  // The bug that broke the live forms: the boundary was lowercased before parsing.
+  const boundary = '----WebKitFormBoundaryAbC123xYz789QwE'
+  const part = (name, value) => `--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}\r\n`
+  const body = part('Name', 'Ada') + part('Email', 'ada@example.com') + part('Message', 'Hi') + part('cf-turnstile-response', 'tok') + part('website', '') + `--${boundary}--\r\n`
+  const req = new Request('https://x/', { method: 'POST', body, headers: { Origin: ORIGIN, 'Content-Type': `multipart/form-data; boundary=${boundary}` } })
+  const r = await worker.fetch(req, env())
+  assert.equal(r.status, 200)
+  assert.equal(sent.length, 1)
+  assert.equal(sent[0].replyTo, 'ada@example.com')
+})
+
+test('a plain URL-encoded form post (what the site sends) works', async () => {
+  const body = new URLSearchParams(good)
+  const r = await worker.fetch(new Request('https://x/', { method: 'POST', body, headers: { Origin: ORIGIN } }), env())
+  assert.equal(r.status, 200)
+  assert.equal(sent.length, 1)
+  assert.match(sent[0].text, /message:\nHello!\nTwo lines\./)
+})
+
+test('a failed bot check logs Cloudflare\'s reason, not the message', async () => {
+  verifyResult = { success: false, 'error-codes': ['invalid-input-secret'] }
+  await worker.fetch(post(good), env())
+  assert.deepEqual(errors, ['turnstile rejected invalid-input-secret'])
+})
+
 test('JSON posts work too', async () => {
   const r = await worker.fetch(post(good, { json: true }), env())
   assert.equal(r.status, 200)

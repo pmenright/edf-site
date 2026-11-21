@@ -118,7 +118,10 @@ async function readFields(request) {
   if (declared > LIMITS.body) throw new Error('too big')
   const raw = await request.arrayBuffer()
   if (raw.byteLength > LIMITS.body) throw new Error('too big')
-  const type = (request.headers.get('Content-Type') || '').toLowerCase()
+  // The type as sent: a multipart boundary is case-sensitive (browsers use mixed case, like
+  // ----WebKitFormBoundaryAbC123), so only the copy used for matching is lowercased.
+  const sentType = request.headers.get('Content-Type') || ''
+  const type = sentType.toLowerCase()
 
   let entries
   if (type.includes('application/json')) {
@@ -126,7 +129,7 @@ async function readFields(request) {
     if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('not an object')
     entries = Object.entries(data)
   } else if (type.includes('multipart/form-data') || type.includes('application/x-www-form-urlencoded')) {
-    const form = await new Response(raw, { headers: { 'Content-Type': type } }).formData()
+    const form = await new Response(raw, { headers: { 'Content-Type': sentType } }).formData()
     entries = [...form.entries()]
   } else {
     throw new Error('unsupported type')
@@ -150,6 +153,8 @@ async function verify(token, secret, ip) {
   const res = await fetch(SITEVERIFY, { method: 'POST', body })
   if (!res.ok) throw new Error(`siteverify ${res.status}`)
   const data = await res.json()
+  // Why a check failed (Cloudflare's codes only, nothing from the message), for `wrangler tail`.
+  if (data.success !== true) console.error('turnstile rejected', (data['error-codes'] || []).join(',') || 'no code')
   return data.success === true
 }
 
