@@ -105,11 +105,12 @@
 }
 
 @layer components {
-  /* Thumbnails: grayscale on desktop until hovered, always color on mobile */
+  /* Thumbnails: grayscale until hovered wherever there's a mouse to hover with (desktop, in the
+     horizontal strip or the vertical page alike); always in color on touch screens, which can't hover. */
   .thumb {
     transition: filter 0.2s var(--ease-reveal);
   }
-  @media (min-width: 992px) and (min-aspect-ratio: 10706/10000) {
+  @media (hover: hover) and (pointer: fine) {
     .thumb {
       filter: saturate(0%);
     }

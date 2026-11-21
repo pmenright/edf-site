@@ -12,7 +12,7 @@ interface ProjectPanelProps {
   className: string
 }
 
-/** One square project tile. Grayscale until hover on desktop (see .thumb in index.css). */
+/** One square project tile. Grayscale until hover wherever there's a mouse; color on touch screens (see .thumb in index.css). */
 export function ProjectPanel({ project, onOpen, eager = false, className }: ProjectPanelProps) {
   const { thumb } = project
   return (
