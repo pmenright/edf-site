@@ -1,6 +1,6 @@
 import { createPopupState } from './popup'
 
-/** The resume popup (ResumeDialog.tsx), opened by the rail's RESUME. See popup.ts. */
+/** The "Download my resume" popup (ResumeDialog.tsx), opened by the resume's RESUME PDF. See popup.ts. */
 const resume = createPopupState()
 export const openResume = resume.open
 export const closeResume = resume.close

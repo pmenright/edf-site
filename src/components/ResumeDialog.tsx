@@ -16,8 +16,8 @@ interface ResumeDialogProps {
 }
 
 /**
- * RESUME popup (opened from the rail's RESUME, see src/lib/resume.ts), laid out like the project
- * viewer's download popup: a heading, VIEW and DOWNLOAD. The file is `resumeFile` in
+ * "Download my resume" popup (opened by the resume's RESUME PDF, see src/lib/resume.ts), laid out like
+ * the project viewer's download popup (the typeface): a heading and DOWNLOAD (and VIEW, if `onView`). The file is `resumeFile` in
  * src/content/site.json (it lives in public/downloads/). The box itself is Popup.tsx.
  */
 export function ResumeDialog({ onClose, onView }: ResumeDialogProps) {

@@ -1,5 +1,6 @@
 import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { projectById, site, withBase } from '../content'
+import { openResume } from '../lib/resume'
 import { showProject } from '../lib/viewer'
 import { AwardIcon } from './AwardIcon'
 import { resume, type Honor, type Job, type SkillItem } from './content'
@@ -148,9 +149,20 @@ export function ResumeDocument() {
   )
 }
 
+/** RESUME PDF: opens the "Download my resume" popup (ResumeDialog.tsx), like the typeface's download. */
 function PdfButton() {
   return (
-    <a href={pdf} download={pdfName} className="resume-pdf group">
+    <a
+      href={pdf}
+      download={pdfName}
+      aria-haspopup="dialog"
+      onClick={(e) => {
+        if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+        e.preventDefault()
+        openResume()
+      }}
+      className="resume-pdf group"
+    >
       <svg aria-hidden="true" viewBox="0 0 12 12" className="size-[0.8em] flex-none" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M6 0v8M2 4.5 6 8.5l4-4M1 11h10" />
       </svg>

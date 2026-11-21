@@ -3,12 +3,14 @@ import { DesktopGallery } from './components/DesktopGallery'
 import { MobileGallery } from './components/MobileGallery'
 import { Preloader } from './components/Preloader'
 import { ContactDialog } from './components/ContactDialog'
+import { ResumeDialog } from './components/ResumeDialog'
 import { ProjectViewer } from './components/ProjectViewer'
 import { projects, type Category, type Project } from './content'
 import { useIsDesktop } from './hooks/useMediaQuery'
 import { useAboutHash } from './hooks/useAboutHash'
 import { useViewerHash } from './hooks/useViewerHash'
 import { closeContact, useContactOpen } from './lib/contact'
+import { closeResume, useResumeOpen } from './lib/resume'
 import { onShowProject } from './lib/viewer'
 import { preload } from './lib/preload'
 
@@ -27,6 +29,7 @@ function panelFromQuery(): Project | undefined {
 export default function App() {
   const isDesktop = useIsDesktop()
   const contactOpen = useContactOpen()
+  const resumeOpen = useResumeOpen()
   const { open, openProject, closeProject } = useViewerHash()
   const { about, openAbout, closeAbout, setAboutSlide } = useAboutHash()
   const [startPanel] = useState(() => (open ? undefined : panelFromQuery()))
@@ -100,6 +103,7 @@ export default function App() {
       )}
       {/* Outside the gallery on purpose: see src/lib/popup.ts. */}
       {contactOpen && <ContactDialog onClose={closeContact} />}
+      {resumeOpen && <ResumeDialog onClose={closeResume} />}
     </>
   )
 }

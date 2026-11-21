@@ -622,6 +622,7 @@
     so everything scales together. Only Jim's palette: ink, --color-pal-*, sand.
   */
   .resume-board {
+    /* The ink rules: whole pixels, so every edge that meets one lines up with it exactly. */
     --rule: max(2px, 0.16em);
     display: flex;
     flex-direction: column;
@@ -631,6 +632,11 @@
     /* A starting point; useFitText sets the real size. */
     font-size: clamp(10.5px, 1.4vh, 17px);
     container-type: inline-size;
+  }
+  @supports (width: round(down, 1.5px, 1px)) {
+    .resume-board {
+      --rule: max(2px, round(down, 0.16em, 1px));
+    }
   }
   /* Too short to fit one screen: the sections grow to their contents and the slide scrolls. */
   .resume-board[data-flow] {
@@ -735,19 +741,27 @@
 
   /*
     Work experience tabs (desktop board). Closed tabs float just above the rule; the open tab comes
-    down onto it and covers it, joined to its job like a folder tab. Freelance's tab is ink.
-    Every tab is the same height whichever is open (the open one's extra bottom padding equals the
-    float gap plus the rule), so the labels never move.
+    down over it, joined to its job like a folder tab. Freelance's tab is ink. The rule is a strip
+    along the bottom of the row, behind the tabs, so the open tab ends exactly where the rule does
+    (no border rounding to fall out of step with). Every tab is the same height whichever is open
+    (the open one's extra bottom padding equals the float gap plus the rule), so the labels never move.
   */
   .job-tabs-box {
     display: flex;
     flex-direction: column;
   }
   .job-tabs {
+    position: relative;
     display: flex;
     align-items: stretch;
     gap: 0.4em;
-    border-bottom: var(--rule) solid var(--color-ink);
+  }
+  .job-tabs::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    height: var(--rule);
+    background: var(--color-ink);
   }
   .job-tab {
     display: flex;
@@ -756,8 +770,10 @@
     align-items: flex-start;
     justify-content: flex-end;
     gap: 0.25em;
+    position: relative;
+    z-index: 1;
     min-width: 0;
-    margin-bottom: 0.35em;
+    margin-bottom: calc(0.35em + var(--rule));
     padding: 0.55em 0.8em 0.45em;
     border: var(--rule) solid var(--color-ink);
     background: var(--color-pal-khaki);
@@ -770,7 +786,7 @@
     background: var(--color-pal-dune);
   }
   .job-tab[aria-selected="true"] {
-    margin-bottom: calc(var(--rule) * -1);
+    margin-bottom: 0;
     padding-bottom: calc(0.8em + var(--rule) * 2);
     border-bottom: 0;
     background: var(--color-sand);
