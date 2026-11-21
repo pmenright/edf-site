@@ -14,9 +14,29 @@ export const byCategory: Record<Category, Project[]> = {
   video: projects.filter((p) => p.category === 'video').sort((a, b) => a.order - b.order),
 }
 
+/**
+ * Lightbox-only pieces: not in the gallery, opened from elsewhere on the site. "boot-camp" is the
+ * resume's WATCH (the Emmy-nominated documentary), starting at 50:18.
+ */
+export const extraProjects: Project[] = [
+  {
+    id: 'boot-camp',
+    category: 'video',
+    order: 0,
+    title: 'Boot Camp: Making a Sailor',
+    discipline: 'Documentary',
+    description: '',
+    thumb: { type: 'image', asset: 'about/headshot.png', alt: '' },
+    media: [{ type: 'youtube', youtubeId: 'pDwLsrmDBF0', title: 'Boot Camp: Making a Sailor', poster: 'sddefault', start: 3018 }],
+    link: { label: 'View on YouTube', href: 'https://www.youtube.com/watch?v=pDwLsrmDBF0&t=3018s' },
+  },
+]
+
 export function findProject(category: string, id: string): Project | undefined {
-  return projects.find((p) => p.category === category && p.id === id)
+  return [...projects, ...extraProjects].find((p) => p.category === category && p.id === id)
 }
+
+export const projectById = (id: string) => [...projects, ...extraProjects].find((p) => p.id === id)
 
 /** Prefix site-root paths with Vite's base so the build also works from a sub-folder. */
 export function withBase(pathOrSrcset: string): string {

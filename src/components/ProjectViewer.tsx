@@ -21,7 +21,7 @@ const UP_KEYS = new Set(['ArrowUp', 'PageUp'])
 
 interface ViewerProps {
   project: Project
-  /** Session-wide: once someone opens the description it stays open between projects. */
+  /** Whether the description is open (App.tsx closes it again whenever the viewer closes). */
   descriptionOpen: boolean
   onDescriptionOpen: (open: boolean) => void
   onClose: () => void
@@ -45,19 +45,11 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
   const [downloadOpen, setDownloadOpen] = useState(false)
   const documentScroller = useRef<HTMLDivElement>(null)
   const downloadButton = useRef<HTMLButtonElement>(null)
-  const linkAttention = useAttention()
-  const alternateAttention = useAttention()
   const media = project.media[0]
   const alternate = project.alternate
-  // DESCRIPTION shows a project's title, discipline or video details, and text. The resume has none of
-  // those, so it gets no DESCRIPTION button.
-  const hasDescription = !!(project.description || project.discipline || project.duties)
+  // DESCRIPTION only for projects that have description text (Phantom 5, Hands and the resume don't).
+  const hasDescription = !!project.description?.trim()
   const showDescription = descriptionOpen && hasDescription
-  // The first time someone opens a project, DESCRIPTION calls attention to itself once.
-  const [descriptionHint] = useState(() => hasDescription && !descriptionOpen && !descriptionHinted && (descriptionHinted = true))
-  const descriptionAttention = useAttention(descriptionHint)
-  // ...and the extra buttons (Visit site, Watch video) wait until it's done, so they flash one at a time.
-  const lateExtras = descriptionHint ? 'viewer-attention-late' : ''
   /*
     Nothing ever sits on top of the artwork. The caption bar (title, DESCRIPTION, the project's extra
     buttons) has its own strip under it. The description opens as a sheet beside it on screens lying
@@ -66,8 +58,13 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
   */
   const side = !portrait && showDescription
   const drawer = portrait && showDescription ? sheetH : 0
-  const stageTop = portrait ? TOP_BAND : 0
-  const stageBottom = barH + drawer
+  // Pictures and videos keep clear of the close button above them and stand off the caption bar
+  // below (and the sides, on screens lying on their side). Documents scroll the full height, with
+  // their first page clear of the close button.
+  const isDocument = (showAlternate && alternate ? alternate.media : media).type === 'document'
+  const inset = !isDocument && !portrait ? STAGE_INSET : 0
+  const stageTop = portrait ? TOP_BAND : isDocument ? 0 : TOP_BAND_WIDE
+  const stageBottom = barH + drawer + (isDocument ? 0 : STAGE_GAP)
   const stageRight = side ? sheetW : 0
   const sheetMotion: Transition = { duration: reduce ? 0 : 0.3, ease: SWAP_EASE }
 
@@ -155,7 +152,6 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
   }, [downloadOpen])
 
   const showView = (alt: boolean) => {
-    alternateAttention.stop()
     setShowAlternate(alt)
     setDeckScrolled(false)
     window.clearTimeout(hintTimer.current)
@@ -271,10 +267,7 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
   const showDeckHint = shown.type === 'document' && !deckScrolled && !leaving
   const swap = { duration: reduce ? 0 : 0.4, ease: SWAP_EASE }
 
-  const toggleDescription = () => {
-    descriptionAttention.stop()
-    onDescriptionOpen(!showDescription)
-  }
+  const toggleDescription = () => onDescriptionOpen(!showDescription)
 
 
   return (
@@ -335,10 +328,10 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
 
       <div className="viewer-slide absolute inset-0" data-leaving={leaving || undefined} inert={downloadOpen}>
         <motion.div
-          className="absolute inset-x-0 [container-type:size]"
-          style={{ top: 0, bottom: 0 }}
+          className="absolute [container-type:size]"
+          style={{ top: 0, bottom: 0, left: 0, right: 0 }}
           initial={false}
-          animate={{ top: stageTop, bottom: stageBottom, right: stageRight }}
+          animate={{ top: stageTop, bottom: stageBottom, left: inset, right: stageRight + inset }}
           transition={sheetMotion}
         >
           {/* Watch video: the design slides up and away while the video slides up into its place.
@@ -404,11 +397,7 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
                 aria-expanded={showDescription}
                 aria-controls="project-description"
                 aria-keyshortcuts="D"
-                className={`${BAR_BUTTON} ${showDescription ? 'bg-sand text-ink' : 'bg-ink text-sand hover:bg-sand hover:text-ink'} ${
-                  descriptionAttention.on ? 'viewer-attention' : ''
-                }`}
-                onPointerEnter={descriptionAttention.stop}
-                onAnimationEnd={descriptionAttention.stop}
+                className={`${BAR_BUTTON} ${showDescription ? 'bg-sand text-ink' : 'bg-ink text-sand hover:bg-sand hover:text-ink'}`}
               >
                 <PlusMinus open={showDescription} />
                 Description
@@ -421,13 +410,8 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
                   ref={downloadButton}
                   type="button"
                   aria-haspopup="dialog"
-                  onClick={() => {
-                    linkAttention.stop()
-                    setDownloadOpen(true)
-                  }}
-                  onPointerEnter={linkAttention.stop}
-                  onAnimationEnd={linkAttention.stop}
-                  className={`${BAR_BUTTON} ${EXTRA_BUTTON} ${linkAttention.on ? `viewer-attention ${lateExtras}` : ''}`}
+                  onClick={() => setDownloadOpen(true)}
+                  className={`${BAR_BUTTON} ${EXTRA_BUTTON}`}
                 >
                   <DownloadIcon />
                   {project.link.label}
@@ -438,9 +422,7 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
                   target="_blank"
                   rel="noopener"
                   aria-label={`${project.link.label} (opens in a new tab)`}
-                  onPointerEnter={linkAttention.stop}
-                  onAnimationEnd={linkAttention.stop}
-                  className={`${BAR_BUTTON} ${EXTRA_BUTTON} ${linkAttention.on ? `viewer-attention ${lateExtras}` : ''}`}
+                  className={`${BAR_BUTTON} ${EXTRA_BUTTON}`}
                 >
                   {project.link.label}
                   <ExternalIcon />
@@ -450,9 +432,7 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
               <button
                 type="button"
                 onClick={toggleAlternate}
-                onPointerEnter={alternateAttention.stop}
-                onAnimationEnd={alternateAttention.stop}
-                className={`${BAR_BUTTON} ${EXTRA_BUTTON} ${alternateAttention.on ? `viewer-attention ${lateExtras}` : ''}`}
+                className={`${BAR_BUTTON} ${EXTRA_BUTTON}`}
               >
                 {showAlternate ? alternate.backLabel : alternate.label}
               </button>
@@ -599,9 +579,12 @@ const EXTRA_BUTTON = 'bg-ink text-sand hover:bg-sand hover:text-ink'
 
 /** On tall screens the artwork keeps clear of the close button in the top corner. */
 const TOP_BAND = 64
-
-/** DESCRIPTION's one-time hint plays on the first project someone opens, then never again. */
-let descriptionHinted = false
+/** Elsewhere, the space over pictures and videos: the close button, and room under it. */
+const TOP_BAND_WIDE = 80
+/** Space between a picture or video and the caption bar under it. */
+const STAGE_GAP = 20
+/** Space at the sides of a picture or video on screens lying on their side. */
+const STAGE_INSET = 24
 
 /** Width of the description sheet beside the artwork on screens lying on their side. */
 function useSheetWidth() {
@@ -618,17 +601,6 @@ function useSheetWidth() {
     return () => window.removeEventListener('resize', onResize)
   }, [])
   return width
-}
-
-/**
- * A button's one-time call for attention (the .viewer-attention flash in index.css). It plays once,
- * right after the viewer slides in. Hovering or pressing the button ends it, and once it has ended it
- * doesn't come back while the viewer stays open. (Not ended on focus: Firefox's showModal focuses the
- * first button for a moment while the viewer opens, which would cancel it before it starts.)
- */
-function useAttention(initial = true) {
-  const [on, setOn] = useState(initial)
-  return { on, stop: () => setOn(false) }
 }
 
 /**
@@ -1164,7 +1136,7 @@ function VideoStage({ media, onBackdrop }: { media: YouTubeMedia; onBackdrop: ()
     // Clicking anywhere around the video closes, as on the original site.
     <div className="absolute inset-0 grid cursor-zoom-out place-items-center" {...clickToClose}>
       <div
-        className="aspect-video w-[min(90cqw,calc((100cqh-120px)*16/9))]"
+        className="aspect-video w-[min(100cqw,calc(100cqh*16/9))]"
         onClick={(e) => e.stopPropagation()}
       >
         <LiteYouTubeEmbed
@@ -1173,7 +1145,7 @@ function VideoStage({ media, onBackdrop }: { media: YouTubeMedia; onBackdrop: ()
           noCookie
           poster={media.poster}
           webp
-          params="rel=0"
+          params={media.start ? `rel=0&start=${media.start}` : 'rel=0'}
         />
       </div>
     </div>

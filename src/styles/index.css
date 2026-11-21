@@ -62,6 +62,32 @@
 }
 
 @layer base {
+  /*
+    Selected text swaps the colors of whatever it's on: sand text on ink selects as ink on sand, and
+    ink on sand as sand on ink. Each surface says what its selection looks like (--sel-bg / --sel-fg),
+    and text inherits it from the nearest one.
+  */
+  :root,
+  .bg-ink,
+  .hello-letter,
+  .job-tab[data-current],
+  .resume-job-flag > span {
+    --sel-bg: var(--color-sand);
+    --sel-fg: var(--color-ink);
+  }
+  .bg-sand,
+  .rail,
+  .resume-sheet,
+  .resume-doc,
+  .job-tab:not([data-current]) {
+    --sel-bg: var(--color-ink);
+    --sel-fg: var(--color-sand);
+  }
+  ::selection {
+    background-color: var(--sel-bg);
+    color: var(--sel-fg);
+  }
+
   html,
   body {
     overscroll-behavior: none;
@@ -414,18 +440,6 @@
   .viewer-slide[data-leaving] { animation-name: viewer-out; }
   .viewer-controls[data-leaving] { animation-name: viewer-controls-out; }
 
-  /* A project's extra buttons (Visit site, Watch video) call attention to themselves once the viewer
-     has arrived: they swell a little and flash their hover colors three times, then settle. This plays
-     once per opening: the viewer takes the class off when it ends, or as soon as the button is hovered
-     or pressed (useAttention in ProjectViewer.tsx). */
-  .viewer-attention {
-    animation: viewer-attention 960ms ease-in-out calc(var(--viewer-duration) + 120ms);
-  }
-  /* When DESCRIPTION is flashing too (the first project someone opens), the extras wait their turn. */
-  .viewer-attention-late {
-    animation-delay: calc(var(--viewer-duration) + 1200ms);
-  }
-
   /* Lite YouTube facade sizing inside the viewer */
   .viewer .yt-lite {
     width: 100%;
@@ -438,9 +452,21 @@
   ABOUT / RESUME (phones). Colors here come only from Jim's palette (ink, --color-pal-*, sand).
 */
 @layer components {
-  /* Both desktop slides measure themselves in cq units (cqw / cqh = 1% of the slide). */
+  /* Both desktop slides measure themselves in cq units (cqw / cqh = 1% of the slide). The resume
+     slide scrolls on its own (when it's taller than the screen) only once it's all the way in. */
   .about-layer [data-slide] {
     container-type: size;
+    overflow: hidden;
+  }
+  /* The vertical page on a window lying on its side: About keeps the desktop composition, one
+     screen tall under the DESIGN / VIDEO row. */
+  .about-frame {
+    height: max(480px, calc(100svh - var(--mnav-h)));
+    container-type: size;
+    overflow: hidden;
+  }
+  .about-frame .hello {
+    --u: clamp(11px, min(1.67cqh, 1.2cqw), 26px);
   }
 
   /*
@@ -579,22 +605,14 @@
   .hello-stacked .hello-headline {
     font-size: calc(100cqw / 7.44);
   }
-  /* Phones on their side: portrait on the left, words on the right. */
+  /* Phones on their side: the same order, the portrait kept to about a screen's height. */
   @media (orientation: landscape) {
-    .hello-stacked {
-      flex-direction: row;
-      align-items: flex-start;
-      gap: 4vw;
-    }
     .hello-stacked .hello-photo {
-      flex: none;
-      width: min(42%, 80svh);
-      margin: 0;
+      width: min(100%, 560px, 105svh);
     }
     .hello-stacked .hello-copy {
-      flex: 1;
-      margin-top: 0;
-      --u: clamp(14px, 1.9vw, 18px);
+      width: min(100%, 640px);
+      margin-inline: auto;
     }
   }
 
@@ -626,9 +644,9 @@
   .resume-board[data-flow] .resume-card-body {
     overflow: visible;
   }
-  [data-slide]:has(> .resume-board[data-flow]) {
+  [data-slide][data-settled]:has(> .resume-board[data-flow]) {
     overflow-y: auto;
-    overscroll-behavior-y: contain;
+    overscroll-behavior-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--color-pal-iron) transparent;
   }
@@ -657,19 +675,13 @@
       "work skl"
       "work edu";
   }
-  /* Honors as two newspaper columns (each award under the last, not in rows, so a short one doesn't
-     leave a gap beside a long one), education as three, in the wide right column. */
-  .resume-sheet .resume-honors {
-    display: block;
-    column-count: 2;
-    column-gap: 1.8em;
-  }
-  .resume-sheet .resume-honor {
-    break-inside: avoid;
-    padding-bottom: 1.15em;
-  }
-  .resume-sheet .resume-honor:last-child {
-    padding-bottom: 0;
+  /* Honors as two columns (each award in the column resume.json names, each under the last), and
+     education as three, in the wide right column. */
+  .resume-honor-cols {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.15em 1.8em;
+    align-items: start;
   }
   .resume-sheet .resume-schools {
     display: grid;
@@ -688,8 +700,8 @@
         "skl  skl"
         "edu  edu";
     }
-    .resume-sheet .resume-honors {
-      column-count: 1;
+    .resume-honor-cols {
+      grid-template-columns: minmax(0, 1fr);
     }
   }
   .resume-card {
@@ -943,28 +955,49 @@
     Skill pills. A skill with parts (Adobe Creative Cloud) is a darker pill holding its name and then
     lighter, smaller pills for the parts; it wraps onto more lines if it has to.
   */
+  /* The group names in a column of their own, right-aligned, and every group's pills starting on
+     the same line after them. */
   .resume-skills {
-    display: flex;
-    flex-direction: column;
-    gap: 0.55em;
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 0.55em 1em;
+    align-items: start;
   }
-  /* Each group is one run of pills, led by its name. */
   .resume-skill-group {
+    display: contents;
+  }
+  /* As tall as a pill (1.9em of the pills' 0.87em, in this label's 0.8em), so the name sits level
+     with its first row of pills. */
+  .resume-skill-label {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    min-height: calc(1.9em * 0.87 / 0.8);
+    font-family: var(--font-ddc);
+    font-size: 0.8em;
+    letter-spacing: 0.14em;
+    text-align: right;
+    text-transform: uppercase;
+    color: var(--color-pal-char);
+  }
+  .resume-pills {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0.34em;
   }
-  .resume-skill-label {
-    margin-right: 0.4em;
-    font-family: var(--font-ddc);
-    font-size: 0.8em;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--color-pal-char);
-  }
-  .resume-pills {
-    display: contents;
+  /* Phones: too narrow for a column of names; each name sits over its pills. */
+  @media (max-width: 599px) {
+    .resume-doc .resume-skills {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.35em;
+    }
+    .resume-doc .resume-skill-label {
+      justify-content: flex-start;
+      min-height: 0;
+      margin-top: 0.5em;
+      text-align: left;
+    }
   }
   .pill {
     display: inline-flex;
@@ -1106,19 +1139,6 @@
   from { transform: translate3d(0, 0, 0); }
   to { transform: translate3d(calc(100% + 40px), 0, 0); }
 }
-/* "off" is the button's resting look (ink, sand text); "on" is its hover look (sand, ink text) */
-@keyframes viewer-attention {
-  0%, 30%, 60%, 100% {
-    background-color: var(--color-ink);
-    color: var(--color-sand);
-  }
-  12%, 20%, 42%, 50%, 72%, 82% {
-    background-color: var(--color-sand);
-    color: var(--color-ink);
-  }
-  0%, 100% { transform: scale(1); }
-  12%, 82% { transform: scale(1.1); }
-}
 @keyframes popup-in {
   from { opacity: 0; transform: translate3d(0, 24px, 0); }
   to { opacity: 1; transform: translate3d(0, 0, 0); }
@@ -1159,8 +1179,7 @@
     animation-name: viewer-fade-out;
   }
   .scroll-ball,
-  .scroll-arrow,
-  .viewer-attention {
+  .scroll-arrow {
     animation: none;
   }
   /* Buttons cut straight from the first frame to the last. */

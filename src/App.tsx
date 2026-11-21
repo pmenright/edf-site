@@ -9,6 +9,7 @@ import { useIsDesktop } from './hooks/useMediaQuery'
 import { useAboutHash } from './hooks/useAboutHash'
 import { useViewerHash } from './hooks/useViewerHash'
 import { closeContact, useContactOpen } from './lib/contact'
+import { onShowProject } from './lib/viewer'
 import { preload } from './lib/preload'
 
 /** "#design" or "#video" on its own (the Nsyte page's footer links) opens that side of the work. */
@@ -56,6 +57,12 @@ export default function App() {
     },
     [openProject],
   )
+  useEffect(() => onShowProject(handleOpen), [handleOpen])
+
+  // The description starts closed every time the lightbox opens.
+  useEffect(() => {
+    if (!open) setDescriptionOpen(false)
+  }, [open])
 
   // DESIGN / VIDEO: also closes the about / resume panel if it's open.
   const showCategory = useCallback(

@@ -24,6 +24,8 @@ export interface YouTubeMedia {
   title: string
   /** Which YouTube poster frame exists for this video */
   poster: 'maxresdefault' | 'sddefault' | 'hqdefault'
+  /** Start playing this many seconds in. */
+  start?: number
 }
 
 export type Media = ImageMedia | YouTubeMedia

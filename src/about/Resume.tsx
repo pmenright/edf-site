@@ -1,5 +1,6 @@
 import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
-import { site, withBase } from '../content'
+import { projectById, site, withBase } from '../content'
+import { showProject } from '../lib/viewer'
 import { AwardIcon } from './AwardIcon'
 import { resume, type Honor, type Job, type SkillItem } from './content'
 
@@ -18,7 +19,7 @@ export function ResumeBoard() {
     <div ref={board} className="resume-board">
       <header className="resume-board-head">
         <h2 className="font-ddc text-[1.9em] leading-none tracking-[0.04em] uppercase">Resume</h2>
-        <p className="min-w-0 truncate font-ddc text-[1.05em] tracking-[0.06em] text-pal-khaki uppercase">
+        <p className="min-w-0 truncate font-text text-[1.05em] font-medium tracking-[0.1em] text-pal-khaki uppercase">
           {resume.name} <span aria-hidden="true">·</span> {resume.title} <span aria-hidden="true">·</span> {resume.tagline}
         </p>
         <PdfButton />
@@ -31,7 +32,7 @@ export function ResumeBoard() {
           <WorkTabs />
         </Card>
         <Card area="hon" title="Honors & awards">
-          <HonorList />
+          <HonorList columns />
         </Card>
         <Card area="skl" title="Skills & interests">
           <SkillList />
@@ -45,14 +46,14 @@ export function ResumeBoard() {
 }
 
 /** Text sizes on the board run from here (smallest that's still comfortable) to there. */
-const FIT_MIN = 11
-const FIT_MAX = 17
+const FIT_MIN = 12
+const FIT_MAX = 18
 /** Text size when the board can't fit one screen and scrolls instead. */
-const FLOW_SIZE = 12
+const FLOW_SIZE = 13.5
 
 /**
  * Sizes the board's text to the screen: the largest size (between FIT_MIN and FIT_MAX px, and no more
- * than 1.6% of the screen height) at which every section's contents fit without scrolling. Everything
+ * than 1.75% of the screen height) at which every section's contents fit without scrolling. Everything
  * on the board is in ems, so the whole layout scales together. Rechecked when the window resizes.
  * On screens too short for that (most laptops, now that the board has everything), it flows
  * (data-flow): same layout at FLOW_SIZE, as tall as it needs, and the resume slide scrolls down.
@@ -69,7 +70,7 @@ function useFitText() {
     }
     const fit = () => {
       el.removeAttribute('data-flow')
-      const max = Math.max(FIT_MIN, Math.min(FIT_MAX, window.innerHeight * 0.016))
+      const max = Math.max(FIT_MIN, Math.min(FIT_MAX, window.innerHeight * 0.0175))
       if (fits(max)) return
       if (!fits(FIT_MIN)) {
         el.setAttribute('data-flow', '')
@@ -111,7 +112,7 @@ export function ResumeDocument() {
       <header className="mb-7 flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-b-[3px] border-ink pb-4">
         <div>
           <h2 className="font-ddc text-[2em] leading-none tracking-[0.03em] uppercase">{resume.name}</h2>
-          <p className="mt-1.5 font-ddc text-[0.95em] tracking-[0.06em] text-pal-char uppercase">
+          <p className="mt-1.5 font-text text-[0.9em] font-medium tracking-[0.1em] text-pal-char uppercase">
             {resume.title} <span aria-hidden="true">·</span> {resume.tagline}
           </p>
         </div>
@@ -291,14 +292,24 @@ function Bullets({ items }: { items: { text: string }[] }) {
   )
 }
 
-/** Each award with Jim's award icon and links to the public record. */
-function HonorList() {
-  return (
+/**
+ * Each award with Jim's award icon and links to the public record. On the board (`columns`) they sit
+ * in two columns, each award in the column its `column` names; on phones, one list in order.
+ */
+function HonorList({ columns = false }: { columns?: boolean }) {
+  const list = (honors: Honor[]) => (
     <ul className="resume-honors">
-      {resume.honors.map((h) => (
+      {honors.map((h) => (
         <HonorEntry key={h.title} honor={h} />
       ))}
     </ul>
+  )
+  if (!columns) return list(resume.honors)
+  return (
+    <div className="resume-honor-cols">
+      {list(resume.honors.filter((h) => (h.column ?? 1) === 1))}
+      {list(resume.honors.filter((h) => h.column === 2))}
+    </div>
   )
 }
 
@@ -311,21 +322,41 @@ function HonorEntry({ honor }: { honor: Honor }) {
         <p className="resume-honor-text">{honor.text}</p>
         {honor.links.length > 0 && (
           <p className="resume-records">
-            {honor.links.map((l) => (
+            {honor.links.map((l) => {
+              // WATCH: the piece itself, in the lightbox (a plain click; others open the link).
+              const piece = l.project ? projectById(l.project) : undefined
+              return (
               <a
                 key={l.label + l.href}
                 href={l.href}
                 target="_blank"
                 rel="noopener"
-                aria-label={`${honor.title}: ${/^\d{4}$/.test(l.label) ? `${l.label} results` : l.label} (opens in a new tab)`}
+                onClick={(e) => {
+                  if (!piece || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+                  e.preventDefault()
+                  showProject(piece)
+                }}
+                aria-label={
+                  piece
+                    ? `${l.label}: ${piece.title}`
+                    : `${honor.title}: ${/^\d{4}$/.test(l.label) ? `${l.label} results` : l.label} (opens in a new tab)`
+                }
+                aria-haspopup={piece ? 'dialog' : undefined}
                 className="resume-record"
               >
                 {l.label}
-                <svg aria-hidden="true" viewBox="0 0 12 12" className="size-[0.62em]" fill="none" stroke="currentColor" strokeWidth="2.2">
-                  <path d="M3 1h8v8M11 1 1 11" />
-                </svg>
+                {piece ? (
+                  <svg aria-hidden="true" viewBox="0 0 12 12" className="size-[0.62em]" fill="currentColor">
+                    <path d="M2 0.8v10.4L11 6z" />
+                  </svg>
+                ) : (
+                  <svg aria-hidden="true" viewBox="0 0 12 12" className="size-[0.62em]" fill="none" stroke="currentColor" strokeWidth="2.2">
+                    <path d="M3 1h8v8M11 1 1 11" />
+                  </svg>
+                )}
               </a>
-            ))}
+              )
+            })}
           </p>
         )}
       </div>

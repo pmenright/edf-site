@@ -42,8 +42,9 @@ function useColumns() {
  * (like the desktop strip). Each side is only as tall as its own tiles, so the page ends right after
  * the side that's showing, however many projects each side has.
  *
- * ABOUT and RESUME slide the about / resume panel in from the right, in place of the work (About, then
- * the whole resume, down the page); DESIGN or VIDEO slides it back out.
+ * RESUME (in the DESIGN / VIDEO row) or ABOUT (in the ribbon) slides the about / resume panel in from
+ * the right, in place of the work (About, then the whole resume, down the page); DESIGN or VIDEO
+ * slides it back out.
  */
 export function MobileGallery({ category, onCategory, onOpen, startAtWork, startAtPanel, about, onAbout }: GalleryProps) {
   const reduce = useReducedMotion()
@@ -190,9 +191,15 @@ export function MobileGallery({ category, onCategory, onOpen, startAtWork, start
       >
         Skip to work
       </a>
-      <MobileContactBar onResume={() => onAbout(1)} />
+      <MobileContactBar />
       <Hero className="mobile-hero w-full" />
-      <MobileNavRow category={category} onCategory={onCategory} categoryActive={!about.open} />
+      <MobileNavRow
+        category={category}
+        onCategory={onCategory}
+        categoryActive={!about.open}
+        onResume={() => onAbout(0)}
+        resumeActive={about.open}
+      />
       <div ref={work} aria-hidden="true" className="scroll-mt-[var(--mnav-h)]" />
       <div
         ref={columns}

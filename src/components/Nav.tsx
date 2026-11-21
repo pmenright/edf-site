@@ -322,31 +322,19 @@ export function NavColumn({
 }
 
 /**
- * Phones and upright tablets: the bar across the top of the page. CONTACT opens the contact popup;
- * RESUME opens the about / resume panel at the resume (or, without `onResume`, the PDF).
+ * Phones and upright tablets: CONTACT, at the top right of the page. It opens the contact popup.
+ * (RESUME is in the DESIGN / VIDEO row, MobileNavRow.)
  */
-export function MobileContactBar({ onResume }: { onResume?: () => void }) {
-  // pb-3 makes each one a 44px-tall target; the extra hangs invisibly below the bar.
+export function MobileContactBar() {
+  // pb-3 makes it a 44px-tall target; the extra hangs invisibly below the tab.
   const link =
     'block w-full cursor-pointer pb-3 text-center font-ddc text-[clamp(16px,5vw,22px)] leading-8 text-sand outline-offset-[-3px] focus-visible:outline-2 focus-visible:outline-sand md:text-[18px]'
-  const cell = 'h-[35px] w-1/2 bg-ink sm:h-[31px] sm:w-[25vw] sm:max-w-[240px]'
   return (
-    <div className="absolute inset-x-0 top-0 z-10 flex h-[33px] items-end justify-center bg-sand sm:h-[31px] sm:bg-transparent">
-      <div className={cell}>
+    <div className="absolute inset-x-0 top-0 z-10 flex justify-end">
+      <div className="h-[35px] w-[40%] max-w-[240px] min-w-[140px] bg-ink sm:h-[31px] sm:w-[25vw]">
         <button type="button" aria-haspopup="dialog" onClick={openContact} className={link}>
           Contact
         </button>
-      </div>
-      <div className={cell}>
-        {onResume ? (
-          <button type="button" onClick={onResume} className={link}>
-            Resume
-          </button>
-        ) : (
-          <a href={resumePdf} className={link}>
-            Resume
-          </a>
-        )}
       </div>
     </div>
   )
@@ -357,14 +345,28 @@ export function MobileContactBar({ onResume }: { onResume?: () => void }) {
  * the screen, so switching sides never means scrolling back up (and from the about / resume panel,
  * either one goes back to the work). Its height is --mnav-h (index.css).
  */
-export function MobileNavRow({ category, onCategory, categoryActive = true }: NavProps & { categoryActive?: boolean }) {
-  const art = 'h-[35px] w-[99px] sm:h-[40px] sm:w-[113px] md:h-[46px] md:w-[130px] short:h-[35px] short:w-[99px]'
-  const button = 'min-h-[44px] w-1/2 items-center sm:w-[160px]'
+export function MobileNavRow({
+  category,
+  onCategory,
+  categoryActive = true,
+  onResume,
+  resumeActive = false,
+}: NavProps & {
+  /** DESIGN or VIDEO shows as selected (not while the about / resume panel is open). */
+  categoryActive?: boolean
+  /** RESUME: the about / resume panel. */
+  onResume: () => void
+  resumeActive?: boolean
+}) {
+  // Three buttons on the narrowest phones too: they shrink with the screen below 367px wide.
+  const art =
+    'h-[min(35px,9.55vw)] w-[min(99px,27vw)] sm:h-[40px] sm:w-[113px] md:h-[46px] md:w-[130px] short:h-[35px] short:w-[99px]'
+  const button = 'min-h-[44px] items-center'
   return (
     <nav
       id="nav"
-      aria-label="Work categories"
-      className="sticky top-0 z-20 flex h-[var(--mnav-h)] items-center justify-center gap-[50px] bg-sand shadow-[0_1px_0_rgb(29_38_44/0.25)]"
+      aria-label="Work categories and resume"
+      className="sticky top-0 z-20 flex h-[var(--mnav-h)] items-center justify-center gap-[clamp(8px,3.2vw,28px)] bg-sand shadow-[0_1px_0_rgb(29_38_44/0.25)]"
     >
       <ArtButton
         name="design-wide"
@@ -382,6 +384,9 @@ export function MobileNavRow({ category, onCategory, categoryActive = true }: Na
         className={button}
         boxClassName={art}
       />
+      {/* The rule between the work and the resume, like the rail's. */}
+      <span aria-hidden="true" className="h-[min(28px,7.6vw)] w-[3px] flex-none bg-ink sm:h-[32px] md:h-[38px] short:h-[28px]" />
+      <ArtButton name="resume-wide" label="Resume" active={resumeActive} onClick={onResume} className={button} boxClassName={art} />
     </nav>
   )
 }

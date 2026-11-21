@@ -37,8 +37,13 @@ export interface Honor {
   short: string
   /** The full entry, as on the PDF. */
   text: string
-  /** Public records of the award (official announcements), or the work itself. */
-  links: { label: string; href: string }[]
+  /**
+   * Public records of the award (official announcements), or the work itself. With `project`, the
+   * link opens that piece in the lightbox (src/content/index.ts); `href` is the fallback.
+   */
+  links: { label: string; href: string; project?: string }[]
+  /** Which of the desktop board's two columns it sits in. */
+  column?: 1 | 2
 }
 
 /** A skill, or a skill with its parts (Adobe Creative Cloud > Illustrator, InDesign...). */

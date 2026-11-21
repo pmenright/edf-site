@@ -1,26 +1,10 @@
 {
-  "_note": "Content for the about / resume panel (the RESUME button on the portfolio; links like /#about and /#about/resume). Text comes from the Nov 2026 resume PDF, all of it: every job, bullet, honor and school shows on desktop and phones alike. \"tab\" and \"years\" label each job's tab on the desktop board. Award links come from the \"Navy Awards Reference\" page in Affine: the Navy's official results messages (NAVADMIN) for each year, and DVIDS for 2018, when the Navy didn't publish a NAVADMIN. The Emmy nomination has no public record yet, so it links to the documentary itself.",
+  "_note": "Content for the about / resume panel (the RESUME button on the portfolio; links like /#about and /#about/resume). Text comes from the Nov 2026 resume PDF, all of it: every job, bullet, honor and school shows on desktop and phones alike. \"tab\" and \"years\" label each job's tab on the desktop board. Award links come from the \"Navy Awards Reference\" page in Affine: the Navy's official results messages (NAVADMIN) for each year, and DVIDS for 2018, when the Navy didn't publish a NAVADMIN. The Emmy nomination has no public record yet, so WATCH opens the documentary itself in the lightbox (\"project\": \"boot-camp\", src/content/index.ts), with the YouTube link as the fallback. \"column\" places each award in one of the desktop board's two columns.",
   "name": "Patrick Enright",
   "title": "Senior Creative Producer",
   "tagline": "U.S. Navy Veteran",
   "summary": "Senior creative producer and U.S. Navy veteran with 14 years in brand identity, graphic design, video and photography production, UX/UI, web, and live events. Led in-house creative for a venture-backed technology company through more than 20 contract wins and a raise of more than $4 million, owning everything from brand and sales collateral to app and website UX. Works closely with engineers and specialists to understand complex systems and explain them so any audience can follow.",
   "work": [
-    {
-      "org": "Enright Design Foundry",
-      "tab": "Freelance",
-      "years": "2013 to now",
-      "kind": "Freelance",
-      "location": "Austin, Texas",
-      "title": "Owner and Designer",
-      "dates": "July 2013 to present",
-      "current": true,
-      "bullets": [
-        { "text": "Delivered more than 20 design, photo, and video projects, including brand identities, logotypes, look books, motion graphics, websites, print, and social media assets for clients across a variety of industries (government, food and beverage, entertainment, tech, medical)." },
-        { "text": "Built Contrast Bench, a color tool that checks palettes against WCAG and APCA accessibility standards, as an Adobe Illustrator plug-in and a web app." },
-        { "text": "Supported photo shoots for live music events and edited B-roll and photography for clients including iHeartRadio and Google." },
-        { "text": "Real estate marketing service: video walkthroughs, 360-degree tours, photography, and listing websites." }
-      ]
-    },
     {
       "org": "Fathom5 / Caliburn Technologies",
       "tab": "Fathom5 / Caliburn",
@@ -92,22 +76,27 @@
           ]
         }
       ]
+    },
+    {
+      "org": "Enright Design Foundry",
+      "tab": "Freelance",
+      "years": "2013 to now",
+      "kind": "Freelance",
+      "location": "Austin, Texas",
+      "title": "Owner and Designer",
+      "dates": "July 2013 to present",
+      "current": true,
+      "bullets": [
+        { "text": "Delivered more than 20 design, photo, and video projects, including brand identities, logotypes, look books, motion graphics, websites, print, and social media assets for clients across a variety of industries (government, food and beverage, entertainment, tech, medical)." },
+        { "text": "Built Contrast Bench, a color tool that checks palettes against WCAG and APCA accessibility standards, as an Adobe Illustrator plug-in and a web app." },
+        { "text": "Supported photo shoots for live music events and edited B-roll and photography for clients including iHeartRadio and Google." },
+        { "text": "Real estate marketing service: video walkthroughs, 360-degree tours, photography, and listing websites." }
+      ]
     }
   ],
   "honors": [
     {
-      "title": "Regional Emmy nomination",
-      "short": "“Boot Camp: Making a Sailor” (2018), Documentary, Cultural/Topical",
-      "text": "Shot video for “Boot Camp: Making a Sailor” (2018), nominated for a regional Emmy in the Documentary, Cultural/Topical category (National Capital Chesapeake Bay chapter).",
-      "links": [
-        {
-          "label": "Watch",
-          "href": "https://www.dvidshub.net/video/694641/boot-camp-making-sailor-full-documentary"
-        }
-      ]
-    },
-    {
-      "title": "Russell Egnor Navy Media Awards ×9",
+      "title": "Navy Media Awards (Individual)",
       "short": "Individual, including Outstanding New Graphic Artist (2014) and first place, Graphic Design Publication (2015)",
       "text": "Individual (nine): Outstanding New Graphic Artist (2014, earned early advancement to E-4); first place, Graphic Design Publication (2015); second place, Video Series (2017) and Training Videography (2018); plus five third-place and honorable mention finishes in design, animation, photography, and video.",
       "links": [
@@ -127,10 +116,11 @@
           "label": "2018",
           "href": "https://www.dvidshub.net/awards/dma/2018?branch=navy"
         }
-      ]
+      ],
+      "column": 1
     },
     {
-      "title": "Russell Egnor Navy Media Awards ×8",
+      "title": "Navy Media Awards (Unit)",
       "short": "Unit, including the Navy Media Excellence Award for best overall media production (2014, 2017)",
       "text": "Unit (eight): Navy Media Excellence Award for best overall media production at USS John C. Stennis (2014) and Defense Media Activity (2017); Stennis also earned first place for The Statesman newspaper and “Studio 74” long-form video (2016), second place for Website (2015), third place for Cruisebook (2016), and two honorable mentions (2014).",
       "links": [
@@ -150,7 +140,21 @@
           "label": "2017",
           "href": "https://www.mynavyhr.navy.mil/Portals/55/Messages/NAVADMIN/NAV2018/NAV18117.txt"
         }
-      ]
+      ],
+      "column": 1
+    },
+    {
+      "title": "Regional Emmy nomination",
+      "short": "“Boot Camp: Making a Sailor” (2018), Documentary, Cultural/Topical",
+      "text": "Shot video for “Boot Camp: Making a Sailor” (2018), nominated for a regional Emmy in the Documentary, Cultural/Topical category (National Capital Chesapeake Bay chapter).",
+      "links": [
+        {
+          "label": "Watch",
+          "href": "https://www.youtube.com/watch?v=pDwLsrmDBF0&t=3018s",
+          "project": "boot-camp"
+        }
+      ],
+      "column": 2
     },
     {
       "title": "Thompson-Ravitz Awards ×3",
@@ -165,13 +169,15 @@
           "label": "2016",
           "href": "https://www.mynavyhr.navy.mil/Portals/55/Messages/NAVADMIN/NAV2017/NAV17086.txt"
         }
-      ]
+      ],
+      "column": 2
     },
     {
-      "title": "Navy and Marine Corps Achievement Medal",
+      "title": "Military Medals and Commendations",
       "short": "Plus two Letters of Commendation and two Good Conduct Medals",
       "text": "Navy and Marine Corps Achievement Medal, two Letters of Commendation, two Good Conduct Medals.",
-      "links": []
+      "links": [],
+      "column": 2
     }
   ],
   "skills": [

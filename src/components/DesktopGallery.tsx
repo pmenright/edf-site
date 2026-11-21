@@ -8,7 +8,7 @@ import {
   type AnimationPlaybackControls,
 } from 'motion/react'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type FocusEvent, type MouseEvent } from 'react'
-import { AboutDesktopLayer, ABOUT_SLIDE_DURATION, type AboutSlide } from '../about/AboutLayer'
+import { AboutRow, ABOUT_SLIDE_DURATION, type AboutSlide } from '../about/AboutLayer'
 import { byCategory, type Category, type Project } from '../content'
 import type { AboutState } from '../hooks/useAboutHash'
 import { Hero } from './Hero'
@@ -29,7 +29,8 @@ interface GalleryProps {
   /** RESUME pressed: open the panel on this slide. */
   onAbout: (s: AboutSlide) => void
   onAboutSlide: (s: AboutSlide) => void
-  onCloseAbout: () => void
+  /** (Phones only; on desktop DESIGN / VIDEO close it.) */
+  onCloseAbout?: () => void
 }
 
 interface Dims {
@@ -46,6 +47,21 @@ interface Dims {
 }
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v))
+
+/** What the strip shows after the nav column: a side of the work, or the about / resume slides. */
+type Side = Category | 'about'
+
+/** A scroll this far (strip px) from About toward the resume, or back, carries on to it when it stops. */
+const ABOUT_COMMIT = 40
+/** The scroll has stopped once it's been this quiet (ms): the about / resume slides settle then. */
+const SETTLE_AFTER = 140
+
+/** About's strip position for these measurements (see aboutStart in DesktopGallery). */
+function aboutStartFor({ navLeft, navW, travel, height }: Dims) {
+  const range = height - window.innerHeight
+  const step = range > 0 ? travel / range : 1 // strip px per px of page scroll
+  return Math.min(travel, navLeft + navW * (1 - RAIL_NARROW) + Math.ceil(step) + 1)
+}
 
 /**
  * Visible page width. Not window width or 100vw: those include a classic (always-shown) scrollbar,
@@ -73,14 +89,20 @@ export function DesktopGallery({
   about,
   onAbout,
   onAboutSlide,
-  onCloseAbout,
 }: GalleryProps) {
   const frame = useRef<HTMLDivElement>(null)
   const slot = useRef<HTMLDivElement>(null)
   // Each side's row of panels. The strip is as long as the side that's showing, so DESIGN and VIDEO
   // can each have any number of projects without the shorter side ending in empty space.
-  const rows = useRef<Record<Category, HTMLElement | null>>({ design: null, video: null })
-  const categoryRef = useRef(category)
+  const rows = useRef<Record<Side, HTMLElement | null>>({ design: null, video: null, about: null })
+  /*
+    RESUME makes the about / resume slides the strip's third side (AboutLayer.tsx): they slide in from
+    the right where DESIGN and VIDEO slide in from above and below, and the page scrolls through them
+    the same way, back past the nav column to the hero. Between About and the resume it settles on
+    one or the other when the scroll stops.
+  */
+  const side: Side = about.open ? 'about' : category
+  const sideRef = useRef(side)
   const rail = useRef<HTMLElement | null>(null)
   const setRail = useCallback((el: HTMLElement | null) => {
     rail.current = el
@@ -92,17 +114,10 @@ export function DesktopGallery({
   const squeeze = useMotionValue(0)
   const reduce = useReducedMotion()
 
-  /*
-    The about / resume panel slides in over the work, right of the docked rail (AboutLayer.tsx). It
-    lives in the strip, under the rail, so the rail still opens over it on hover; `aboutPin` holds it
-    against the docked rail wherever the strip is. While it's open the page scroll is held still
-    (`lockAt`, a strip position), so the work under it stays put and is where it was when it closes.
-  */
-  const aboutPin = useMotionValue(0)
-  const aboutOpen = useRef(about.open)
-  const lockAt = useRef<number | null>(null)
-  /** The strip is gliding to the docked rail as the panel opens (the page scroll already jumped). */
+  /** The strip is gliding on to About as it opens from nearer the hero (the page scroll already jumped). */
   const gliding = useRef<AnimationPlaybackControls | null>(null)
+  /** The resume slide: it scrolls on its own (when it's taller than the screen) only once it's fully in. */
+  const resumeSlide = useRef<HTMLElement | null>(null)
 
   // Docked or not. The rail collapses on a trigger rather than following the scroll: it stays full
   // width while the first panel slides under it, and when the panel reaches the spot where the docked
@@ -113,7 +128,7 @@ export function DesktopGallery({
   /** Put the strip at `offset` pixels along (and pin / dock the rail to match). */
   const place = useCallback((offset: number) => {
     x.set(-offset)
-    aboutPin.set(offset - dims.navLeft - dims.navW * (1 - RAIL_NARROW))
+    resumeSlide.current?.toggleAttribute('data-settled', offset >= dims.travel - 1)
     // Past the nav column's own position: hold it at the left edge.
     const past = offset - dims.navLeft
     pin.set(Math.max(0, past))
@@ -125,7 +140,7 @@ export function DesktopGallery({
     docked.current = want
     if (first) squeeze.set(want ? 1 : 0)
     else animate(squeeze, want ? 1 : 0, { duration: reduce ? 0 : RAIL_EXPAND_DURATION, ease: RAIL_EASE })
-  }, [dims, x, pin, squeeze, reduce, aboutPin])
+  }, [dims, x, pin, squeeze, reduce])
 
   const update = useCallback(() => {
     if (gliding.current) return
@@ -190,6 +205,12 @@ export function DesktopGallery({
         if (box.left < 0 || box.right > vw) goTo(dimsRef.current.navLeft, true)
         return
       }
+      // About and the resume: tabbing into one brings it in.
+      const slideEl = el.closest<HTMLElement>('[data-about-layer] [data-slide]')
+      if (slideEl) {
+        goTo(slideEl.dataset.slide === '1' ? dimsRef.current.travel : aboutStart(), true)
+        return
+      }
       const panel = el.closest('.panel')
       if (panel) {
         const box = panel.getBoundingClientRect()
@@ -201,12 +222,12 @@ export function DesktopGallery({
       // Anything else (the hero's scroll hint): back to the hero if it isn't fully on screen.
       if (r.left < 0 || r.right > vw) goTo(0, true)
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [goTo, panelOffset],
   )
 
   const onFocusCapture = (e: FocusEvent<HTMLDivElement>) => {
     const el = e.target as HTMLElement
-    if (el.closest('[data-about-layer]')) return // the panel brings its own slides in
     let keyboard = true
     try {
       keyboard = el.matches(':focus-visible')
@@ -224,7 +245,7 @@ export function DesktopGallery({
     const viewerOpen = () => document.documentElement.classList.contains('viewer-open')
 
     const onWheel = (e: WheelEvent) => {
-      if (viewerOpen() || e.ctrlKey || aboutOpen.current) return // ctrlKey = pinch-zoom on trackpads
+      if (viewerOpen() || e.ctrlKey) return // ctrlKey = pinch-zoom on trackpads
       if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return // mostly vertical: native scroll handles it
       e.preventDefault()
       const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? viewWidth() : 1
@@ -235,7 +256,7 @@ export function DesktopGallery({
     // (lined up against the docked rail), then the end of the strip.
     let pending: { offset: number; at: number } | null = null
     const onKey = (e: KeyboardEvent) => {
-      if (viewerOpen() || e.altKey || e.metaKey || e.ctrlKey || e.shiftKey || aboutOpen.current) return
+      if (viewerOpen() || e.altKey || e.metaKey || e.ctrlKey || e.shiftKey) return
       if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return
       const el = e.target as HTMLElement
       if (el.closest('input, textarea, select, [contenteditable="true"]')) return
@@ -246,6 +267,7 @@ export function DesktopGallery({
       frame.current.querySelectorAll('section:not([inert]) .panel').forEach((p) => {
         stops.push(inStrip(p).left - navW * RAIL_NARROW)
       })
+      if (sideRef.current === 'about') stops.push(aboutStart())
       const sorted = [...new Set(stops.map((s) => Math.round(clamp(s, 0, travel))))].sort((a, b) => a - b)
       // While a smooth step is still gliding, step on from where it's headed, not from mid-glide.
       const now = performance.now()
@@ -261,12 +283,6 @@ export function DesktopGallery({
     // put it back, or the pinned rail would slide part-way off the left edge.
     const onScroll = () => {
       if (window.scrollX !== 0) window.scrollTo({ left: 0, behavior: 'instant' })
-      // The about / resume panel is open: the page under it doesn't scroll (keys like Home or End,
-      // or dragging the scrollbar, would otherwise move the work underneath).
-      if (aboutOpen.current && lockAt.current !== null && !gliding.current) {
-        const top = lockAt.current * ratio()
-        if (Math.abs(window.scrollY - top) > 1) window.scrollTo({ top, behavior: 'instant' })
-      }
     }
 
     window.addEventListener('wheel', onWheel, { passive: false })
@@ -277,30 +293,53 @@ export function DesktopGallery({
       window.removeEventListener('keydown', onKey)
       window.removeEventListener('scroll', onScroll)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [goTo, ratio, x])
 
+  /**
+    Where About sits: the rail just docked, About right beside it. A little past the exact docking
+    point (more than one step of the page scroll), so the rail is sure to be docked there.
+  */
+  const aboutStart = useCallback(() => aboutStartFor(dimsRef.current), [])
+
   /** The strip's measurements with `cat` showing. */
-  const measureFor = useCallback((cat: Category): Dims | null => {
-    const row = rows.current[cat]
-    if (!frame.current || !slot.current || !row) return null
+  /** After a resize on About / the resume: the slide to put back on screen. */
+  const resnap = useRef<AboutSlide | null>(null)
+  useLayoutEffect(() => {
+    if (resnap.current === null || sideRef.current !== 'about') return
+    const to = resnap.current === 1 ? dims.travel : aboutStartFor(dims)
+    resnap.current = null
+    window.scrollTo({ top: to * ratio(), behavior: 'instant' })
+  }, [dims, ratio])
+
+  const measureFor = useCallback((s: Side): Dims | null => {
+    const row = rows.current[s]
+    if (!frame.current || !slot.current || (!row && s !== 'about')) return null
     const vw = viewWidth()
     const navLeft = slot.current.offsetLeft
     const navW = slot.current.offsetWidth
-    // hero + nav column + this side's panels (the other side's row may be longer or shorter)
-    const travel = Math.max(0, navLeft + navW + row.offsetWidth - vw)
+    // The about / resume slides are each a screen wide less the docked rail (worked out, not
+    // measured: they may not be on the page yet, and they follow the screen size).
+    const rowW = s === 'about' ? 2 * Math.round(vw - navW * RAIL_NARROW) : row!.offsetWidth
+    // hero + nav column + this side's panels (the other sides' rows may be longer or shorter)
+    const travel = Math.max(0, navLeft + navW + rowW - vw)
     return { travel, height: Math.max(travel - vw, window.innerHeight * 2), navLeft, navW, vw }
   }, [])
 
   useLayoutEffect(() => {
     const measure = () => {
-      const next = measureFor(categoryRef.current)
-      if (next) {
-        dimsRef.current = next
-        setDims(next)
-        // Resized with the about / resume panel open: keep the work under it where it was.
-        if (aboutOpen.current && lockAt.current !== null && !gliding.current) {
-          window.scrollTo({ top: lockAt.current * ratio(), behavior: 'instant' })
-        }
+      const before = dimsRef.current
+      const at = -x.get()
+      const next = measureFor(sideRef.current)
+      if (!next) return
+      dimsRef.current = next
+      setDims(next)
+      // Resized on the about / resume slides: stay on the same slide (the page scroll maps onto a
+      // different length now, so it's set again).
+      if (sideRef.current === 'about' && before.travel > 0 && !gliding.current) {
+        const startWas = aboutStartFor(before)
+        // (Applied once the page has its new height, below: until then the scroll can't reach it.)
+        if (at >= startWas - 2) resnap.current = at - startWas > (before.travel - startWas) / 2 ? 1 : 0
       }
     }
     measure()
@@ -312,102 +351,131 @@ export function DesktopGallery({
       ro.disconnect()
       window.removeEventListener('resize', measure)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [measureFor, ratio])
 
-  /** Strip position where the rail has just docked: the panel opens against the docked rail. */
-  const dockAt = useCallback(() => {
-    const { navLeft, navW, travel } = dimsRef.current
-    return Math.min(travel, navLeft + navW * (1 - RAIL_NARROW) + RAIL_TRIGGER_SLACK)
-  }, [])
-
   /*
-    Opening the panel. If the rail is already docked (somewhere in the work), nothing under it moves:
-    the panel slides in from the right and the work waits underneath, where it was. If it isn't (the
-    nav column is still on its way in from the hero), the strip glides on to where the rail docks while
-    the panel slides in, so the rail ends up docked at the left edge with the panel beside it.
-    Closing lets the page scroll again. Runs before the DESIGN / VIDEO switch below, so a switch made
-    from the panel (it closes it) starts from a free page.
-  */
-  const wasAboutOpen = useRef(about.open)
-  useLayoutEffect(() => {
-    const opening = about.open && !wasAboutOpen.current
-    const closing = !about.open && wasAboutOpen.current
-    wasAboutOpen.current = about.open
-    aboutOpen.current = about.open
-    if (closing) {
-      lockAt.current = null
-      gliding.current?.stop()
-      gliding.current = null
-      return
-    }
-    if (!opening || dimsRef.current.travel <= 0) return
-    const offset = -x.get()
-    const dock = dockAt()
-    if (offset >= dock - RAIL_TRIGGER_SLACK) {
-      lockAt.current = offset
-      return
-    }
-    lockAt.current = dock
-    window.scrollTo({ top: dock * ratio(), behavior: 'instant' })
-    const glide = animate(offset, dock, {
-      duration: reduce ? 0 : ABOUT_SLIDE_DURATION + 0.1,
-      ease: [0.65, 0, 0.35, 1],
-      onUpdate: place,
-    })
-    gliding.current = glide
-    void glide.then(() => {
-      if (gliding.current === glide) gliding.current = null
-    })
-  }, [about.open, dockAt, place, ratio, reduce, x])
-  useEffect(() => () => gliding.current?.stop(), [])
-
-  /*
-    Switching DESIGN / VIDEO starts the new side at its beginning: the full nav column at the left
-    edge with the first panel just to its right, the same spot as scrolling away from the hero, so
-    scrolling on from there plays the same hold-then-collapse. Nothing on screen jumps: in the same
-    frame as the switch, the page scroll goes back to that start and the side being left is nudged
-    sideways by the same amount, so it still shows what it showed; then it slides away as usual while
-    the new side slides in at its first panel (and the rail opens back to full width). Once it's out
-    of sight its nudge is removed. Nearer the start than that, nothing changes.
+    Switching sides. DESIGN / VIDEO start the new side at its beginning: the full nav column at the
+    left edge with the first panel just to its right, the same spot as scrolling away from the hero,
+    so scrolling on from there plays the same hold-then-collapse. RESUME starts on About, the rail
+    docked beside it (or on the resume, from a "#about/resume" link). Nothing on screen jumps: in the
+    same frame as the switch, the page scroll goes to that start and the side being left is nudged
+    sideways by the same amount, so it still shows what it showed; then it slides away as the new
+    side slides in (from below or above, or from the right for About). Once it's out of sight its
+    nudge is removed. From nearer the hero than that start, nothing moves for DESIGN / VIDEO, and for
+    About the strip glides on to it while it slides in.
   */
   const shiftDesign = useMotionValue(0)
   const shiftVideo = useMotionValue(0)
-  const prevCategory = useRef(category)
+  const shiftAbout = useMotionValue(0)
+  const prevSide = useRef(side)
+  /** The page opened straight onto About ("/#about"): it's just there, it doesn't slide in. */
+  const openedOnAbout = useRef(side === 'about')
   const settle = useRef<number | undefined>(undefined)
   useLayoutEffect(() => {
-    const prev = prevCategory.current
-    prevCategory.current = category
-    categoryRef.current = category
-    if (prev === category || dimsRef.current.travel <= 0) return
-    const shift = (c: Category) => (c === 'design' ? shiftDesign : shiftVideo)
-    const incoming = shift(category)
+    const prev = prevSide.current
+    prevSide.current = side
+    sideRef.current = side
+    if (prev === side || dimsRef.current.travel <= 0) return
+    openedOnAbout.current = false
+    const shift = (c: Side) => (c === 'design' ? shiftDesign : c === 'video' ? shiftVideo : shiftAbout)
+    const incoming = shift(side)
     const outgoing = shift(prev)
     window.clearTimeout(settle.current)
+    gliding.current?.stop()
+    gliding.current = null
     // Switched back mid-slide: glide the returning side home along with the slide.
     if (incoming.get() !== 0) animate(incoming, 0, { duration: reduce ? 0 : 0.25, ease: 'easeInOut' })
     const offset = -x.get()
     // The new side has its own length: measure it now, before working out any scroll position, so
     // the page height and the scroll-to-strip mapping are the new side's from this frame on.
-    const next = measureFor(category)
+    const next = measureFor(side)
     if (next) {
       dimsRef.current = next
       setDims(next)
     }
-    const { navLeft, travel, height } = dimsRef.current
-    const start = navLeft
+    const { travel, height } = dimsRef.current
+    const start = side === 'about' ? (about.slide === 1 ? travel : aboutStart()) : dimsRef.current.navLeft
     const range = height - window.innerHeight
     if (offset > start + 1) {
       window.scrollTo({ top: start * ratio(), behavior: 'instant' })
       const landed = range > 0 ? (window.scrollY / range) * travel : start
       outgoing.set(outgoing.get() - (offset - landed))
       place(landed)
+    } else if (side === 'about' && offset < start - 1) {
+      window.scrollTo({ top: start * ratio(), behavior: 'instant' })
+      const to = range > 0 ? (window.scrollY / range) * travel : start
+      const glide = animate(offset, to, {
+        duration: reduce ? 0 : ABOUT_SLIDE_DURATION + 0.1,
+        ease: [0.65, 0, 0.35, 1],
+        onUpdate: place,
+      })
+      gliding.current = glide
+      void glide.then(() => {
+        if (gliding.current === glide) gliding.current = null
+      })
     } else {
       // Near the start nothing moves: keep the strip exactly where it is under the new mapping.
       window.scrollTo({ top: offset * ratio(), behavior: 'instant' })
       place(offset)
     }
-    settle.current = window.setTimeout(() => outgoing.set(0), reduce ? 0 : 300)
-  }, [category, measureFor, place, ratio, reduce, shiftDesign, shiftVideo, x])
+    settle.current = window.setTimeout(() => outgoing.set(0), reduce ? 0 : ABOUT_SLIDE_DURATION * 1000 + 50)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [side, measureFor, place, ratio, reduce, shiftDesign, shiftVideo, shiftAbout, x])
+  useEffect(() => () => gliding.current?.stop(), [])
+
+  // RESUME pressed (or a link followed) while the about / resume slides are already showing: glide
+  // to the slide asked for.
+  const aboutSeq = useRef(about.seq)
+  useEffect(() => {
+    if (aboutSeq.current === about.seq) return
+    aboutSeq.current = about.seq
+    if (side === 'about' && prevSide.current === 'about') goTo(about.slide === 1 ? dimsRef.current.travel : aboutStart(), true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [about.seq])
+
+  // Between About and the resume, a scroll that stops part-way carries on to the slide it was heading
+  // for (ABOUT_COMMIT is enough), or goes back to the one it started from. Nearer the hero than About
+  // the strip stays wherever it's left, like the work.
+  useEffect(() => {
+    let timer = 0
+    /** Where the strip last came to rest: a scroll's direction is measured from there. */
+    let rest: number | null = null
+    const offsetNow = () => {
+      const range = dimsRef.current.height - window.innerHeight
+      return range > 0 ? clamp(window.scrollY / range, 0, 1) * dimsRef.current.travel : 0
+    }
+    const onScroll = () => {
+      if (sideRef.current !== 'about' || gliding.current) {
+        rest = null
+        return
+      }
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => {
+        const now = offsetNow()
+        const began = rest ?? now
+        rest = now
+        if (sideRef.current !== 'about') return
+        const a = aboutStart()
+        const r = dimsRef.current.travel
+        if (now < a - 1) return onAboutSlide(0)
+        if (now >= r - 1) return onAboutSlide(1)
+        if (now <= a + 1) return onAboutSlide(0)
+        const moved = now - began
+        const toResume =
+          moved > ABOUT_COMMIT ? true : moved < -ABOUT_COMMIT ? false : Math.abs(began - r) < Math.abs(began - a)
+        rest = toResume ? r : a
+        onAboutSlide(toResume ? 1 : 0)
+        goTo(rest, true)
+      }, SETTLE_AFTER)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.clearTimeout(timer)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [goTo, onAboutSlide])
   useEffect(() => () => window.clearTimeout(settle.current), [])
 
   /** Scroll hint: glide to where the nav column reaches the left edge. */
@@ -418,37 +486,39 @@ export function DesktopGallery({
   // is measured).
   const landed = useRef(false)
   useEffect(() => {
-    if (landed.current || dims.travel <= 0 || !(startAtWork || startAtPanel || aboutOpen.current)) return
+    if (landed.current || dims.travel <= 0 || !(startAtWork || startAtPanel || sideRef.current === 'about')) return
     landed.current = true
-    if (aboutOpen.current) {
-      lockAt.current = dockAt()
-      goTo(lockAt.current, false)
+    if (sideRef.current === 'about') {
+      goTo(about.slide === 1 ? dims.travel : aboutStart(), false)
       return
     }
     const panel = startAtPanel && frame.current?.querySelector(`.panel[data-project="${CSS.escape(startAtPanel)}"]`)
     goTo(panel ? panelOffset(panel) : dims.navLeft, false)
-  }, [startAtWork, startAtPanel, dims, goTo, panelOffset, dockAt])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startAtWork, startAtPanel, dims, goTo, panelOffset])
 
-  /** Logo: back to the hero (closing the about / resume panel first, if it's open). */
-  const goHome = () => {
-    if (aboutOpen.current) {
-      aboutOpen.current = false
-      lockAt.current = null
-      onCloseAbout()
-    }
-    goTo(0, true)
-  }
+  /** Logo: back to the hero. From About / the resume it scrolls back the way it came, like the work. */
+  const goHome = () => goTo(0, true)
 
-  /** RESUME: open the panel on About (or, if it's open on the resume, go back to About). */
+  /** RESUME: the about / resume slides, on About (or, if they're showing, back to About). */
   const openAbout = () => onAbout(0)
 
-  // A switch made from the about / resume panel (DESIGN or VIDEO closes it) happens out of sight,
-  // under the panel as it slides away, so the rows swap without their own slide. (Read during render:
-  // the layout effect above hasn't recorded this render's state yet, so it still says "was open".)
-  const underPanel = wasAboutOpen.current || about.open
+  // The about / resume slides are on the page while they show, and while they slide away. (Read
+  // during render on purpose: on the render that closes them, the switch effect hasn't run yet, so
+  // prevSide still says "about" and they stay for their slide out.)
+  const [keepAbout, setKeepAbout] = useState(false)
+  const showAbout = side === 'about' || prevSide.current === 'about' || keepAbout
+  useLayoutEffect(() => {
+    if (side === 'about') return setKeepAbout(false)
+    setKeepAbout(true)
+    const t = window.setTimeout(() => setKeepAbout(false), ABOUT_SLIDE_DURATION * 1000 + 100)
+    return () => window.clearTimeout(t)
+  }, [side])
+  // A DESIGN / VIDEO switch made from About (it closes it) happens out of sight, under the slides as
+  // they slide away, so the rows swap without their own slide.
+  const underPanel = showAbout
 
-  const railW = dims.navW * RAIL_NARROW
-  const slideW = Math.max(0, Math.round(dims.vw - railW))
+  const slideW = Math.max(0, Math.round(dims.vw - dims.navW * RAIL_NARROW))
 
   /** Skip link: straight to the first project of the current category. */
   const skipToWork = (e: MouseEvent<HTMLAnchorElement>) => {
@@ -477,7 +547,7 @@ export function DesktopGallery({
           onFocusCapture={onFocusCapture}
           className="flex h-full w-max will-change-transform"
         >
-          <Hero onScrollHint={scrollToWork} inert={about.open} className="h-screen w-[100cqw]" />
+          <Hero onScrollHint={scrollToWork} className="h-screen w-[100cqw]" />
           <NavColumn
             category={category}
             onCategory={onCategory}
@@ -522,14 +592,19 @@ export function DesktopGallery({
                 </motion.section>
               ))}
             </motion.div>
-            <AboutDesktopLayer
-              open={about.open}
-              slide={about.slide}
-              seq={about.seq}
-              pin={aboutPin}
-              slideW={slideW}
-              onSlide={onAboutSlide}
-            />
+            {showAbout && (
+              <AboutRow
+                open={about.open}
+                slideW={slideW}
+                shift={shiftAbout}
+                appear={!openedOnAbout.current}
+                rowRef={(el) => {
+                  rows.current.about = el
+                  resumeSlide.current = el?.querySelector<HTMLElement>('[data-slide="1"]') ?? null
+                }}
+                onNext={() => goTo(dimsRef.current.travel, true)}
+              />
+            )}
           </div>
         </motion.div>
       </div>
