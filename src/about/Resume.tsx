@@ -232,7 +232,7 @@ function WorkTabs({ reserve = true }: { reserve?: boolean }) {
             onClick={() => setOpen(i)}
             className="job-tab"
           >
-            <span className="job-tab-name">{job.tab}</span>
+            <span className="job-tab-name">{!reserve && job.tabShort ? job.tabShort : job.tab}</span>
             <span className="job-tab-years">{job.years}</span>
           </button>
         ))}

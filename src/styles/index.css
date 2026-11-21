@@ -1225,19 +1225,21 @@
   .resume-doc {
     --rule: 2px;
   }
-  /* Each tab at least as wide as its longest word (names never get cut off); the labels scale down
-     with the screen on small phones, so all four fit on one row down to 320px wide. */
+  /* Each name on one line (the tabs use the short names here, "Fathom5"), each tab at least as wide
+     as its name; the labels scale down with the screen on small phones, so all four fit on one row
+     down to 320px wide. The years wrap if they must. */
   .resume-doc .job-tabs {
-    gap: 0.25em;
+    gap: 0.2em;
   }
   .resume-doc .job-tab {
     flex: 1 1 auto;
     min-width: min-content;
-    padding-inline: 0.45em;
+    padding-inline: 0.38em;
   }
   .resume-doc .job-tab-name {
     font-size: min(0.82em, max(10px, 3.1vw));
     letter-spacing: 0.03em;
+    white-space: nowrap;
   }
   .resume-doc .job-tab-years {
     font-size: min(0.74em, max(9.5px, 2.8vw));

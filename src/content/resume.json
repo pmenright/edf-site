@@ -1,5 +1,5 @@
 {
-  "_note": "Content for the about / resume panel (the RESUME button on the portfolio; links like /#about and /#about/resume). Text comes from the Nov 2026 resume PDF, all of it: every job, bullet, honor and school shows on desktop and phones alike. \"tab\" and \"years\" label each job's tab on the desktop board. Award links come from the \"Navy Awards Reference\" page in Affine: the Navy's official results messages (NAVADMIN) for each year, and DVIDS for 2018, when the Navy didn't publish a NAVADMIN. The Emmy nomination has no public record yet, so WATCH opens the documentary itself in the lightbox (\"project\": \"boot-camp\", src/content/index.ts), with the YouTube link as the fallback. \"column\" places each award in one of the desktop board's two columns.",
+  "_note": "Content for the about / resume panel (the RESUME button on the portfolio; links like /#about and /#about/resume). Text comes from the Nov 2026 resume PDF, all of it: every job, bullet, honor and school shows on desktop and phones alike. \"tab\" and \"years\" label each job's tab (\"tabShort\", if there is one, on phones and tablets, where the tabs are narrower). Award links come from the \"Navy Awards Reference\" page in Affine: the Navy's official results messages (NAVADMIN) for each year, and DVIDS for 2018, when the Navy didn't publish a NAVADMIN. The Emmy nomination has no public record yet, so WATCH opens the documentary itself in the lightbox (\"project\": \"boot-camp\", src/content/index.ts), with the YouTube link as the fallback. \"column\" places each award in one of the desktop board's two columns.",
   "name": "Patrick Enright",
   "title": "Senior Creative Producer",
   "tagline": "U.S. Navy Veteran",
@@ -8,6 +8,7 @@
     {
       "org": "Fathom5 / Caliburn Technologies",
       "tab": "Fathom5 / Caliburn",
+      "tabShort": "Fathom5",
       "years": "2021 to 2026",
       "location": "Austin, Texas",
       "title": "Senior Creative Designer",

@@ -16,8 +16,10 @@ export interface Unit {
 
 export interface Job {
   org: string
-  /** Short name on the job's tab (desktop board): "Freelance", "Bowhead"... */
+  /** Short name on the job's tab: "Freelance", "Bowhead"... */
   tab: string
+  /** A shorter one still, for the narrower tabs on phones and tablets ("Fathom5"). */
+  tabShort?: string
   /** Years under the tab name: "2013 to now" */
   years: string
   /** "Freelance" */
