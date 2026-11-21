@@ -13,8 +13,11 @@ export function useMediaQuery(query: string): boolean {
 
 /**
  * The horizontal-scroll layout starts at the same 992px breakpoint as the Webflow site, but only on
- * screens at least 5:4 wide. Portrait tablets and monitors get the vertical stack, since their
- * screen-tall square panels would be wider than the screen. Same query as the `strip:` variant in index.css.
+ * screens wide enough to show one whole square panel beside the docked rail: at least as wide as
+ * the screen is tall, plus the docked rail. The rail is 20% of the screen's height at full width and
+ * docks to 407/1153 of that (the button art's shape, RAIL_NARROW in src/lib/rail.ts), so that's a
+ * width of 1.0706 times the height. Narrower screens (portrait tablets and monitors, squarish
+ * windows) get the vertical page. Same query as the `strip:` variant in index.css.
  */
-export const STRIP_QUERY = '(min-width: 992px) and (min-aspect-ratio: 5/4)'
+export const STRIP_QUERY = '(min-width: 992px) and (min-aspect-ratio: 10706/10000)'
 export const useIsDesktop = () => useMediaQuery(STRIP_QUERY)

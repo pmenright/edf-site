@@ -753,7 +753,7 @@ function ImageStage({
   )
   return (
     // Clicking anywhere on the artwork (or the dark space around it) closes the viewer.
-    <div ref={stage} className="absolute inset-0 cursor-zoom-out overflow-hidden data-zoomed:cursor-grab" {...clickToClose}>
+    <div ref={stage} className="absolute inset-0 overflow-hidden data-zoomed:cursor-grab" {...clickToClose}>
       <div ref={layer} className="absolute inset-0 origin-top-left will-change-transform">
       {!loaded && (
         // Same box the real image will fill (exact aspect ratio), so nothing shifts when it arrives.
@@ -1193,7 +1193,7 @@ function DocumentStage({
       tabIndex={-1}
       aria-label={media.alt}
       role="region"
-      className="absolute inset-0 cursor-zoom-out overflow-auto overscroll-contain outline-none"
+      className="absolute inset-0 overflow-auto overscroll-contain outline-none"
       onScroll={onScroll}
       {...clickToClose}
     >
@@ -1261,7 +1261,7 @@ function VideoStage({ media, onBackdrop }: { media: YouTubeMedia; onBackdrop: ()
   const clickToClose = useClickToClose(onBackdrop)
   return (
     // Clicking anywhere around the video closes, as on the original site.
-    <div className="absolute inset-0 grid cursor-zoom-out place-items-center" {...clickToClose}>
+    <div className="absolute inset-0 grid place-items-center" {...clickToClose}>
       <div
         className="aspect-video w-[min(100cqw,calc(100cqh*16/9))]"
         onClick={(e) => e.stopPropagation()}
@@ -1347,7 +1347,7 @@ function CaptionBar({
   return (
     <div
       ref={ref}
-      className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))] font-ddc text-sand sm:px-6 md:pb-5 short:pt-2 short:pb-2"
+      className="viewer-caption flex flex-wrap items-center justify-center gap-x-6 gap-y-3 px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))] font-ddc text-sand sm:px-6 md:pb-5 short:pt-2 short:pb-2"
     >
       <div className="flex min-w-0 items-center gap-3 max-sm:w-full">
         <div className={`min-w-0 flex-1 sm:text-left ${tools ? 'text-left' : 'text-center'}`}>

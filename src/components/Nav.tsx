@@ -328,7 +328,7 @@ export function NavColumn({
 export function MobileContactBar() {
   // pb-3 makes it a 44px-tall target; the extra hangs invisibly below the tab.
   const link =
-    'block w-full cursor-pointer pb-3 text-center font-ddc text-[clamp(16px,5vw,22px)] leading-8 text-sand outline-offset-[-3px] focus-visible:outline-2 focus-visible:outline-sand md:text-[18px]'
+    'block w-full cursor-pointer pt-2.5 pb-3 text-center font-ddc text-[clamp(16px,5vw,22px)] leading-8 text-sand outline-offset-[-3px] focus-visible:outline-2 focus-visible:outline-sand md:text-[18px]'
   return (
     <div className="absolute inset-x-0 top-0 z-10 flex justify-end">
       <div className="h-[35px] w-[40%] max-w-[240px] min-w-[140px] bg-ink sm:h-[31px] sm:w-[25vw]">

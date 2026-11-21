@@ -19,7 +19,7 @@ interface GalleryProps {
   startAtPanel?: string
   /** The about / resume panel (App.tsx, useAboutHash). */
   about: AboutState
-  /** ABOUT (ribbon) or RESUME (top bar): open the panel on this slide. */
+  /** RESUME (in the DESIGN / VIDEO row): open the panel on this slide. */
   onAbout: (s: AboutSlide) => void
 }
 
@@ -37,13 +37,12 @@ function useColumns() {
 /**
  * Phones, tablets, and any screen that isn't wide enough for the desktop strip: a normal vertical page.
  * Bar with CONTACT and RESUME, hero, the DESIGN / VIDEO row (it sticks to the top once scrolled to),
- * the work as square tiles, then a ribbon with ABOUT and CONTACT. Switching category slides the two
+ * the work as square tiles, then a ribbon with CONTACT. Switching category slides the two
  * sides sideways; if the page was scrolled into the work, the new side starts at its first project
  * (like the desktop strip). Each side is only as tall as its own tiles, so the page ends right after
  * the side that's showing, however many projects each side has.
  *
- * RESUME (in the DESIGN / VIDEO row) or ABOUT (in the ribbon) slides the about / resume panel in from
- * the right, in place of the work (About, then the whole resume, down the page); DESIGN or VIDEO
+ * RESUME (in the DESIGN / VIDEO row) slides the about / resume panel in from the right, in place of the work (About, then the whole resume, down the page); DESIGN or VIDEO
  * slides it back out.
  */
 export function MobileGallery({ category, onCategory, onOpen, startAtWork, startAtPanel, about, onAbout }: GalleryProps) {
@@ -254,22 +253,19 @@ export function MobileGallery({ category, onCategory, onOpen, startAtWork, start
         </motion.div>
         </motion.div>
       </div>
-      <BottomRibbon onAbout={() => onAbout(0)} />
+      <BottomRibbon />
     </main>
   )
 }
 
-/** After the work: the about / resume panel and the contact popup, in a sand ribbon like the DESIGN / VIDEO row. */
-function BottomRibbon({ onAbout }: { onAbout: () => void }) {
+/** After the work: the contact popup, in a sand ribbon like the DESIGN / VIDEO row. */
+function BottomRibbon() {
   const button =
     'group grid h-11 cursor-pointer place-items-center outline-none'
   const face =
     'block h-10 border-2 border-ink px-6 font-ddc text-[16px] leading-[36px] tracking-[0.08em] text-ink uppercase transition-colors group-hover:bg-ink group-hover:text-sand group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-ink'
   return (
     <nav aria-label="More" className="flex items-center justify-center gap-4 bg-sand px-4 py-4">
-      <button type="button" onClick={onAbout} className={button}>
-        <span className={face}>About</span>
-      </button>
       <button type="button" aria-haspopup="dialog" onClick={openContact} className={button}>
         <span className={face}>Contact</span>
       </button>

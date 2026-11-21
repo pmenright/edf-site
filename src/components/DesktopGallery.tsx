@@ -70,7 +70,8 @@ function aboutStartFor({ navLeft, navW, travel, height }: Dims) {
 const viewWidth = () => document.documentElement.clientWidth
 
 /**
- * Desktop (992px+ and landscape): vertical scrolling slides one long strip sideways.
+ * Desktop (992px+ and wide enough for a whole panel beside the docked rail): vertical scrolling
+ * slides one long strip sideways.
  * Strip = hero (one screen wide) | nav column | square panels (one screen tall each).
  *
  * Matches the Webflow interaction: the page is (strip travel - one screen width) tall,

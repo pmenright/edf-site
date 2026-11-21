@@ -399,7 +399,7 @@ function Pill({ item }: { item: SkillItem }) {
   return (
     <li className="pill pill-parent">
       <span className="pill-name">{item.name}</span>
-      <ul className="contents" aria-label={`${item.name}:`}>
+      <ul className="pill-subs" aria-label={`${item.name}:`}>
         {item.sub.map((s) => (
           <li key={s} className="pill pill-sub">
             {s}

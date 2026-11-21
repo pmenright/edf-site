@@ -44,11 +44,12 @@
 }
 
 /*
-  The horizontal strip (desktop) layout: 992px and wider AND landscape-ish (at least 5:4).
+  The horizontal strip (desktop) layout: 992px and wider AND wide enough for one whole square panel
+  beside the docked rail (width at least 1.0706 times the height; see STRIP_QUERY).
   Portrait tablets and portrait monitors get the vertical stack instead, since their square panels
   would be wider than the screen. Keep in sync with STRIP_QUERY in src/hooks/useMediaQuery.ts.
 */
-@custom-variant strip (@media (min-width: 992px) and (min-aspect-ratio: 5/4));
+@custom-variant strip (@media (min-width: 992px) and (min-aspect-ratio: 10706/10000));
 
 /* Short screens (phones on their side): tighter bars so the work keeps most of the height. */
 @custom-variant short (@media (max-height: 500px));
@@ -108,7 +109,7 @@
   .thumb {
     transition: filter 0.2s var(--ease-reveal);
   }
-  @media (min-width: 992px) and (min-aspect-ratio: 5/4) {
+  @media (min-width: 992px) and (min-aspect-ratio: 10706/10000) {
     .thumb {
       filter: saturate(0%);
     }
@@ -439,6 +440,10 @@
   .viewer-backdrop[data-leaving] { animation-name: viewer-fade-out; }
   .viewer-slide[data-leaving] { animation-name: viewer-out; }
   .viewer-controls[data-leaving] { animation-name: viewer-controls-out; }
+  /* The caption bar (title and buttons) rises in a beat after the artwork, not with it. */
+  .viewer-caption {
+    animation: viewer-caption-in var(--viewer-duration) var(--viewer-ease-in) 160ms both;
+  }
 
   /* Lite YouTube facade sizing inside the viewer */
   .viewer .yt-lite {
@@ -458,15 +463,19 @@
     container-type: size;
     overflow: hidden;
   }
-  /* The vertical page on a window lying on its side: About keeps the desktop composition, one
-     screen tall under the DESIGN / VIDEO row. */
+  /* The vertical page on a window lying on its side: About keeps the desktop composition under the
+     DESIGN / VIDEO row, sized like the desktop slide would be for this screen (--fu, the letter's
+     text size). Where the portrait (66 --fu tall) is shorter than the screen, the section keeps only
+     half of the space that would be left over above the head. */
   .about-frame {
-    height: max(480px, calc(100svh - var(--mnav-h)));
+    --avail: max(480px, calc(100svh - var(--mnav-h)));
+    --fu: clamp(11px, min(calc(var(--avail) * 0.0167), 1.2vw), 26px);
+    height: min(var(--avail), calc((var(--avail) + 66 * var(--fu)) / 2));
     container-type: size;
     overflow: hidden;
   }
   .about-frame .hello {
-    --u: clamp(11px, min(1.67cqh, 1.2cqw), 26px);
+    --u: var(--fu);
   }
 
   /*
@@ -1026,9 +1035,13 @@
     line-height: 1;
     white-space: nowrap;
   }
+  /* A skill with parts: its name, then the parts, which wrap in their own column (a second row
+     lines up under the first part, not under the name). */
   .pill-parent {
-    flex-wrap: wrap;
+    flex: 0 1 auto;
+    align-items: flex-start;
     gap: 0.25em;
+    min-width: 0;
     height: auto;
     min-height: 1.9em;
     padding: 0.22em 0.22em 0.22em 0.75em;
@@ -1037,8 +1050,17 @@
     white-space: normal;
   }
   .pill-name {
+    flex: none;
     margin-right: 0.25em;
     font-weight: 600;
+    line-height: calc(1.5em * 0.88);
+    white-space: nowrap;
+  }
+  .pill-subs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25em;
+    min-width: 0;
   }
   .pill-sub {
     height: 1.5em;
@@ -1147,6 +1169,10 @@
   from { transform: translate3d(0, 0, 0); }
   to { transform: translate3d(0, 100%, 0); }
 }
+@keyframes viewer-caption-in {
+  from { transform: translate3d(0, 100%, 0); opacity: 0; }
+  to { transform: translate3d(0, 0, 0); opacity: 1; }
+}
 @keyframes viewer-controls-in {
   from { transform: translate3d(calc(100% + 40px), 0, 0); }
   to { transform: translate3d(0, 0, 0); }
@@ -1195,7 +1221,8 @@
     animation-name: viewer-fade-out;
   }
   .scroll-ball,
-  .scroll-arrow {
+  .scroll-arrow,
+  .viewer-caption {
     animation: none;
   }
   /* Buttons cut straight from the first frame to the last. */
