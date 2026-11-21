@@ -81,13 +81,15 @@ export function ContactForm() {
         Name
         <input name="Name" type="text" autoComplete="name" maxLength={200} className={FIELD} />
       </label>
+      {/* Email is the one required field (the asterisk; the browser says so for screen readers). */}
       <label className={LABEL}>
         Email
+        <span aria-hidden="true">*</span>
         <input name="Email" type="email" autoComplete="email" required maxLength={254} className={FIELD} />
       </label>
       <label className={LABEL}>
         Message
-        <textarea name="Message" required rows={5} maxLength={5000} className={`${FIELD} resize-y`} />
+        <textarea name="Message" rows={5} maxLength={5000} className={`${FIELD} resize-y`} />
       </label>
       {/* Bots fill this in; people never see or reach it. */}
       <div aria-hidden="true" className="absolute -left-[10000px] h-px w-px overflow-hidden">
@@ -98,12 +100,21 @@ export function ContactForm() {
       </div>
       {/* Cloudflare's bot check: empty unless it needs a click. */}
       <div ref={check} className="empty:hidden" />
-      <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-3">
+      {/* SEND, centered, with any note about the send under it. */}
+      <div className="mt-2 flex flex-col items-center text-center">
         <button type="submit" disabled={status === 'sending'} className="group grid cursor-pointer place-items-center outline-none disabled:cursor-wait">
           <span className={`${POPUP_BUTTON} ${POPUP_BUTTON_FILLED} min-w-[120px] px-6`}>{status === 'sending' ? 'Sending…' : 'Send'}</span>
         </button>
-        <p role={status === 'failed' ? 'alert' : 'status'} className="min-w-0 flex-1 font-text text-[16px] leading-[1.35]">
-          {status === 'failed' && "That didn't send. Please try again, or email me directly below."}
+        <p role={status === 'failed' ? 'alert' : 'status'} className="mt-3 font-text text-[16px] leading-[1.35] tracking-normal text-balance normal-case empty:mt-0">
+          {status === 'failed' && (
+            <>
+              That didn't send. Please try again, or email me at{' '}
+              <a href={`mailto:${site.email}`} className="underline decoration-sand/50 underline-offset-4 hover:decoration-sand">
+                {site.email}
+              </a>
+              .
+            </>
+          )}
           {status === 'mailed' && 'Your email app should open with your message ready to send.'}
         </p>
       </div>
