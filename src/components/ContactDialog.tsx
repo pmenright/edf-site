@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef } from 'react'
 import { site } from '../content'
+import { useCopy } from '../lib/copy'
 import { POPUP_BUTTON, POPUP_BUTTON_FILLED, POPUP_BUTTON_OUTLINED } from '../lib/popup'
 import { Popup } from './Popup'
 
@@ -12,29 +13,8 @@ const mail = `mailto:${site.email}`
 export function ContactDialog({ onClose }: { onClose: () => void }) {
   // Start on the heading, so a stray Enter doesn't open the mail app; Tab goes on to the address.
   const heading = useRef<HTMLHeadingElement>(null)
-  const [copied, setCopied] = useState(false)
-  const copiedTimer = useRef<number | undefined>(undefined)
-  useEffect(() => () => window.clearTimeout(copiedTimer.current), [])
-
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(site.email)
-    } catch {
-      // Older browsers, or the clipboard blocked: copy through a temporary text field. It goes inside
-      // the popup, because everything outside a modal dialog is off limits while it's open.
-      const field = document.createElement('textarea')
-      field.value = site.email
-      field.setAttribute('readonly', '')
-      field.style.cssText = 'position:fixed;top:0;left:0;opacity:0'
-      heading.current?.parentElement?.append(field)
-      field.select()
-      document.execCommand('copy')
-      field.remove()
-    }
-    setCopied(true)
-    window.clearTimeout(copiedTimer.current)
-    copiedTimer.current = window.setTimeout(() => setCopied(false), 2000)
-  }
+  const { copied, copy: copyTo } = useCopy(site.email)
+  const copy = () => copyTo(heading.current?.parentElement)
 
   return (
     <Popup

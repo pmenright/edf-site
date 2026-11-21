@@ -91,7 +91,11 @@
         { "text": "Built Contrast Bench, a color tool that checks palettes against WCAG and APCA accessibility standards, as an Adobe Illustrator plug-in and a web app." },
         { "text": "Supported photo shoots for live music events and edited B-roll and photography for clients including iHeartRadio and Google." },
         { "text": "Real estate marketing service: video walkthroughs, 360-degree tours, photography, and listing websites." }
-      ]
+      ],
+      "banner": {
+        "title": "Open for new clients!",
+        "text": "I am currently open for new clients in the St. Louis and Austin markets. If you saw something that inspired you, give me a chance to talk to you about your project."
+      }
     }
   ],
   "honors": [

@@ -72,7 +72,7 @@
   .bg-ink,
   .hello-letter,
   .job-tab[data-current],
-  .resume-job-flag > span {
+  .resume-banner {
     --sel-bg: var(--color-sand);
     --sel-fg: var(--color-ink);
   }
@@ -834,19 +834,90 @@
     display: grid;
     padding-top: 1em;
   }
-  .job-panel {
+  [data-reserve] .job-panel {
     grid-area: 1 / 1;
     visibility: hidden;
   }
-  .job-panel[data-open] {
+  [data-reserve] .job-panel[data-open] {
     visibility: visible;
   }
 
-  .resume-jobs {
-    display: flex;
-    flex-direction: column;
-    gap: 1.7em;
+  /* The freelance tab's banner: ink, with the email address, COPY and EMAIL. */
+  .resume-banner {
+    margin-top: 1.4em;
+    padding: 1.15em 1.5em 1.5em;
+    background: var(--color-ink);
+    color: var(--color-sand);
   }
+  .resume-banner-title {
+    font-family: var(--font-ddc);
+    font-size: 1.95em;
+    letter-spacing: 0.05em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+  .resume-banner-text {
+    margin-top: 0.45em;
+    font-size: 1.04em;
+    line-height: 1.45;
+    text-wrap: pretty;
+  }
+  .resume-banner-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.9em 1.2em;
+    margin-top: 1.3em;
+  }
+  .resume-banner-email {
+    font-family: var(--font-ddc);
+    font-size: 1.4em;
+    letter-spacing: 0.06em;
+    text-decoration: underline 2px var(--color-pal-taupe);
+    text-underline-offset: 0.3em;
+    overflow-wrap: anywhere;
+    transition: text-decoration-color 0.15s;
+  }
+  .resume-banner-email:hover {
+    text-decoration-color: var(--color-sand);
+  }
+  .resume-banner-email:focus-visible {
+    outline: 2px solid var(--color-sand);
+    outline-offset: 4px;
+  }
+  .resume-banner-button {
+    display: block;
+    height: 2.5em;
+    padding: 0 1.2em;
+    border: 2px solid var(--color-sand);
+    background: transparent;
+    color: var(--color-sand);
+    font-family: var(--font-ddc);
+    font-size: 1em;
+    letter-spacing: 0.12em;
+    line-height: calc(2.5em - 4px);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+  }
+  .resume-banner-button:hover {
+    background: var(--color-sand);
+    color: var(--color-ink);
+  }
+  .resume-banner-button[data-filled] {
+    background: var(--color-sand);
+    color: var(--color-ink);
+  }
+  .resume-banner-button[data-filled]:hover {
+    background: transparent;
+    color: var(--color-sand);
+  }
+  .resume-banner-button:focus-visible {
+    outline: 2px solid var(--color-sand);
+    outline-offset: 2px;
+  }
+
   .resume-job-head {
     display: flex;
     align-items: baseline;
@@ -904,23 +975,6 @@
     justify-content: space-between;
     gap: 1em;
   }
-  /* Phones: the current job's ink tab, on a rule over the job (the desktop board's freelance tab). */
-  .resume-job-flag {
-    display: flex;
-    margin-bottom: 0.7em;
-    border-bottom: 3px solid var(--color-ink);
-  }
-  .resume-job-flag > span {
-    padding: 0.5em 0.85em 0.4em;
-    background: var(--color-ink);
-    color: var(--color-sand);
-    font-family: var(--font-ddc);
-    font-size: 0.85em;
-    letter-spacing: 0.08em;
-    line-height: 1;
-    text-transform: uppercase;
-  }
-
   .resume-honors {
     display: flex;
     flex-direction: column;
@@ -1037,14 +1091,16 @@
   }
   /* A skill with parts: its name, then the parts, which wrap in their own column (a second row
      lines up under the first part, not under the name). */
+  /* The parts sit in the same gap above, below and to the right: (1.9em pill - 1.32em part) / 2. The
+     corners nest too: the part's radius (0.66em) plus that gap is the pill's (0.95em). */
   .pill-parent {
+    --inset: calc((1.9em - 1.5em * 0.88) / 2);
     flex: 0 1 auto;
     align-items: flex-start;
     gap: 0.25em;
     min-width: 0;
     height: auto;
-    min-height: 1.9em;
-    padding: 0.22em 0.22em 0.22em 0.75em;
+    padding: var(--inset) var(--inset) var(--inset) 0.75em;
     border-radius: 0.95em;
     background: var(--color-pal-dune);
     white-space: normal;
@@ -1138,6 +1194,38 @@
   .resume-doc .resume-unit-head {
     flex-wrap: wrap;
     gap: 0.1em 1em;
+  }
+  /* Phones and tablets: the same job tabs, sharing the width; names and years wrap if they must. */
+  .resume-doc {
+    --rule: 2px;
+  }
+  /* Each tab at least as wide as its longest word (names never get cut off); the labels scale down
+     with the screen on small phones, so all four fit on one row down to 320px wide. */
+  .resume-doc .job-tabs {
+    gap: 0.25em;
+  }
+  .resume-doc .job-tab {
+    flex: 1 1 auto;
+    min-width: min-content;
+    padding-inline: 0.45em;
+  }
+  .resume-doc .job-tab-name {
+    font-size: min(0.82em, max(10px, 3.1vw));
+    letter-spacing: 0.03em;
+  }
+  .resume-doc .job-tab-years {
+    font-size: min(0.74em, max(9.5px, 2.8vw));
+    line-height: 1.15;
+    white-space: normal;
+  }
+  .resume-doc .resume-banner {
+    padding: 1em 1.1em 1.2em;
+  }
+  .resume-doc .resume-banner-title {
+    font-size: 1.55em;
+  }
+  .resume-doc .resume-banner-email {
+    font-size: 1.2em;
   }
 }
 

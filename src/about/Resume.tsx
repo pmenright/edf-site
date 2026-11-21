@@ -1,5 +1,6 @@
 import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { projectById, site, withBase } from '../content'
+import { useCopy } from '../lib/copy'
 import { openResume } from '../lib/resume'
 import { showProject } from '../lib/viewer'
 import { AwardIcon } from './AwardIcon'
@@ -87,11 +88,16 @@ function useFitText() {
       }
       el.style.fontSize = `${lo}px`
     }
+    /** After every fit: things sized to the text (the skill pills that wrap, below) size themselves again. */
+    const fitAndTell = () => {
+      fit()
+      el.dispatchEvent(new Event('resume-fit'))
+    }
     const schedule = () => {
       cancelAnimationFrame(frame)
-      frame = requestAnimationFrame(fit)
+      frame = requestAnimationFrame(fitAndTell)
     }
-    fit()
+    fitAndTell()
     // Web fonts arriving change the measurements.
     void document.fonts?.ready.then(schedule)
     window.addEventListener('resize', schedule)
@@ -104,8 +110,8 @@ function useFitText() {
 }
 
 /**
- * Phones and tablets: the whole resume as one column, in the same order as the PDF (every line of
- * every job), on sand. The current job (freelance) gets the same ink tab as on desktop.
+ * Phones and tablets: the whole resume as one column, in the same order as the PDF, on sand. Work
+ * experience has the same tabs as on desktop.
  */
 export function ResumeDocument() {
   return (
@@ -123,18 +129,7 @@ export function ResumeDocument() {
         <p className="resume-summary">{resume.summary}</p>
       </DocSection>
       <DocSection title="Work experience">
-        <div className="resume-jobs">
-          {resume.work.map((job) => (
-            <div key={job.org}>
-              {job.current && (
-                <p className="resume-job-flag">
-                  <span>{job.tab}</span>
-                </p>
-              )}
-              <JobEntry job={job} />
-            </div>
-          ))}
-        </div>
+        <WorkTabs reserve={false} />
       </DocSection>
       <DocSection title="Honors & awards">
         <HonorList />
@@ -193,13 +188,14 @@ function DocSection({ title, children }: { title: string; children: ReactNode })
 }
 
 /**
- * Work experience on the board: a tab per job, freelance first. Freelance's tab is ink (the current
- * job). The open tab sits down on the rule over the job, joined to it like a folder tab; the others
- * float just above it. Every job's panel stays in the layout (only the open one shows), so the
- * section is always as tall as the longest job and nothing jumps when switching.
+ * Work experience: a tab per job, in resume.json's order. Freelance's tab is ink (the current job).
+ * The open tab sits down on the rule over the job, joined to it like a folder tab; the others float
+ * just above it. On the desktop board (`reserve`) every job's panel stays in the layout (only the
+ * open one shows), so the section is always as tall as the longest job and nothing jumps when
+ * switching; on phones only the open job takes up room.
  * Keyboard: arrow keys (and Home / End) move between tabs.
  */
-function WorkTabs() {
+function WorkTabs({ reserve = true }: { reserve?: boolean }) {
   const [open, setOpen] = useState(0)
   const id = useId()
   const tabs = useRef<(HTMLButtonElement | null)[]>([])
@@ -218,7 +214,7 @@ function WorkTabs() {
     tabs.current[to]?.focus()
   }
   return (
-    <div className="job-tabs-box">
+    <div className="job-tabs-box" data-reserve={reserve || undefined}>
       <div role="tablist" aria-label="Jobs" className="job-tabs" onKeyDown={onKeyDown}>
         {resume.work.map((job, i) => (
           <button
@@ -250,6 +246,7 @@ function WorkTabs() {
             aria-labelledby={`${id}-tab-${i}`}
             data-open={open === i || undefined}
             inert={open !== i}
+            hidden={!reserve && open !== i}
             className="job-panel"
           >
             <JobEntry job={job} />
@@ -277,6 +274,7 @@ function JobEntry({ job }: { job: Job }) {
         <p className="resume-dates">{job.dates}</p>
       </header>
       <Bullets items={job.bullets} />
+      {job.banner && <ClientBanner title={job.banner.title} text={job.banner.text} />}
       {(job.units ?? []).map((u) => (
         <div key={u.org} className="resume-unit">
           <p className="resume-unit-head">
@@ -290,6 +288,47 @@ function JobEntry({ job }: { job: Job }) {
         </div>
       ))}
     </article>
+  )
+}
+
+const mail = `mailto:${site.email}`
+
+/**
+ * The freelance tab's ink banner (Jim's mockup): OPEN FOR NEW CLIENTS!, a line, then the email
+ * address (a mail link), COPY and EMAIL, like the contact popup.
+ */
+function ClientBanner({ title, text }: { title: string; text: string }) {
+  const { copied, copy } = useCopy(site.email)
+  const id = useId()
+  return (
+    <aside className="resume-banner" aria-labelledby={id}>
+      <h5 id={id} className="resume-banner-title">
+        {title}
+      </h5>
+      <p className="resume-banner-text">{text}</p>
+      <div className="resume-banner-actions">
+        <a href={mail} className="resume-banner-email">
+          {site.email}
+        </a>
+        <div className="flex gap-[0.7em]">
+          <button type="button" onClick={() => copy()} aria-label="Copy email address" className="resume-banner-button">
+            {/* Both words in the same spot, so the button keeps its width when the label changes. */}
+            <span className="grid">
+              <span className={`col-start-1 row-start-1 ${copied ? 'invisible' : ''}`}>Copy</span>
+              <span className={`col-start-1 row-start-1 ${copied ? '' : 'invisible'}`} aria-hidden="true">
+                Copied
+              </span>
+            </span>
+          </button>
+          <a href={mail} aria-label={`Email ${site.email}`} className="resume-banner-button" data-filled="">
+            <span>Email</span>
+          </a>
+        </div>
+      </div>
+      <p role="status" className="sr-only">
+        {copied ? 'Email address copied' : ''}
+      </p>
+    </aside>
   )
 }
 
@@ -376,10 +415,47 @@ function HonorEntry({ honor }: { honor: Honor }) {
   )
 }
 
-/** Skills as pills, by group. A skill with parts is a darker pill holding lighter, smaller ones. */
+/**
+ * Skills as pills, by group. A skill with parts is a darker pill holding lighter, smaller ones, in
+ * the same gap above, below and to their right. When the parts run onto more lines, the pill is sized
+ * to the longest line, so that gap holds on the right too (a box can't shrink to wrapped contents
+ * on its own; this measures them, after every resize and every fit of the board's text).
+ */
 function SkillList() {
+  const ref = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const root = ref.current
+    if (!root) return
+    let frame = 0
+    const hug = () => {
+      for (const pill of root.querySelectorAll<HTMLElement>('.pill-parent')) {
+        pill.style.width = ''
+        const parts = [...pill.querySelectorAll<HTMLElement>('.pill-sub')]
+        if (parts.length < 2 || parts[parts.length - 1].offsetTop === parts[0].offsetTop) continue
+        const box = pill.getBoundingClientRect()
+        const right = Math.max(...parts.map((p) => p.getBoundingClientRect().right))
+        const style = getComputedStyle(pill)
+        // In ems, so it scales with the board's text as that's refitted.
+        pill.style.width = `${(right - box.left + parseFloat(style.paddingRight) + 0.5) / parseFloat(style.fontSize)}em`
+      }
+    }
+    const schedule = () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(hug)
+    }
+    hug()
+    void document.fonts?.ready.then(schedule)
+    const board = root.closest('.resume-board')
+    board?.addEventListener('resume-fit', hug)
+    window.addEventListener('resize', schedule)
+    return () => {
+      cancelAnimationFrame(frame)
+      board?.removeEventListener('resume-fit', hug)
+      window.removeEventListener('resize', schedule)
+    }
+  }, [])
   return (
-    <div className="resume-skills">
+    <div ref={ref} className="resume-skills">
       {resume.skills.map((g) => (
         <div key={g.group} className="resume-skill-group">
           <h4 className="resume-skill-label">{g.group}</h4>

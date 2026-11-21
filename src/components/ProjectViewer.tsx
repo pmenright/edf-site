@@ -643,6 +643,53 @@ function useSheetWidth() {
   return width
 }
 
+/** On touch screens, how long a tap waits to see whether a second one makes it a double tap (ms). */
+const DOUBLE_TAP_MS = 280
+
+/**
+ * The artwork's tap / click handling: like useClickToClose (a click closes, drags don't, and nothing
+ * closes while zoomed in), plus double tap on touch screens. A tap waits DOUBLE_TAP_MS for a second
+ * one; if it comes, close by, the double tap zooms in on that spot (or back to fitted), and nothing
+ * closes. A mouse click still closes straight away.
+ */
+function useTapToClose(onClose: () => void, isZoomed: () => boolean, onDoubleTap: (x: number, y: number) => void) {
+  const down = useRef<{ x: number; y: number; touch: boolean } | null>(null)
+  const pending = useRef<{ x: number; y: number; timer: number } | null>(null)
+  useEffect(() => () => window.clearTimeout(pending.current?.timer), [])
+  return {
+    onPointerDown: (e: PointerEvent) => {
+      down.current = { x: e.clientX, y: e.clientY, touch: e.pointerType === 'touch' || e.pointerType === 'pen' }
+    },
+    onClick: (e: MouseEvent) => {
+      const d = down.current
+      down.current = null
+      if (!d || Math.hypot(e.clientX - d.x, e.clientY - d.y) > 6) return
+      if (!d.touch) {
+        if (isZoomed()) return
+        window.getSelection()?.removeAllRanges()
+        onClose()
+        return
+      }
+      const first = pending.current
+      if (first && Math.hypot(e.clientX - first.x, e.clientY - first.y) < 40) {
+        window.clearTimeout(first.timer)
+        pending.current = null
+        onDoubleTap(e.clientX, e.clientY)
+        return
+      }
+      if (first) window.clearTimeout(first.timer)
+      pending.current = {
+        x: e.clientX,
+        y: e.clientY,
+        timer: window.setTimeout(() => {
+          pending.current = null
+          if (!isZoomed()) onClose()
+        }, DOUBLE_TAP_MS),
+      }
+    },
+  }
+}
+
 /**
  * Click-to-close that ignores drags (like selecting text), so finishing a selection
  * never closes the viewer. A press that moves more than a few pixels isn't a click.
@@ -731,8 +778,9 @@ function ImageStage({
   const stage = useRef<HTMLDivElement>(null)
   const layer = useRef<HTMLDivElement>(null)
   const zoom = usePinchZoom(stage, layer, zoomLink)
-  // Zoomed in, a tap doesn't close (it's easy to brush the artwork while looking around it).
-  const clickToClose = useClickToClose(onClose, zoom.isZoomed)
+  // Zoomed in, a tap doesn't close (it's easy to brush the artwork while looking around it). On touch
+  // screens a double tap zooms in on that spot (or back out), and a single tap still closes.
+  const clickToClose = useTapToClose(onClose, zoom.isZoomed, zoom.toggleAt)
   // The board as shown: its wide layout, or its portrait layout on a tall screen (see above).
   const portrait = usePortraitLayout(stage, getAsset(board.asset), board.portrait ? getAsset(board.portrait) : null)
   const media = portrait && board.portrait ? { ...board, asset: board.portrait } : board
@@ -870,6 +918,17 @@ function usePinchZoom(frame: RefObject<HTMLElement | null>, layer: RefObject<HTM
       reset: () => {
         s = 1
         tx = ty = 0
+        apply(true)
+      },
+      toggleAt: (cx, cy) => {
+        if (s > 1.001) {
+          s = 1
+          tx = ty = 0
+        } else {
+          const [x, y] = local(cx, cy)
+          zoomAt(x, y, DOUBLE_TAP_ZOOM)
+          clampPan()
+        }
         apply(true)
       },
     }
@@ -1013,7 +1072,7 @@ function usePinchZoom(frame: RefObject<HTMLElement | null>, layer: RefObject<HTM
     }
   }, [frame, layer])
   useZoomControls(api, zoom)
-  return { isZoomed: () => zoomed.current }
+  return { isZoomed: () => zoomed.current, toggleAt: (x: number, y: number) => api.current?.toggleAt?.(x, y) }
 }
 
 /** What the viewer's + / fit / - buttons call on the artwork that's showing. */
@@ -1022,7 +1081,12 @@ interface ZoomControls {
   zoomBy: (f: number) => void
   /** Back to the whole thing, fitted to the screen. */
   reset: () => void
+  /** Double tap: zoom in on that point of the screen, or back to fitted if zoomed in. */
+  toggleAt?: (clientX: number, clientY: number) => void
 }
+
+/** A double tap zooms in this far. */
+const DOUBLE_TAP_ZOOM = 2.5
 
 /** Wiring between a stage's zoom and the viewer's buttons: the stage hands over its controls and reports its scale. */
 interface ZoomLink {
