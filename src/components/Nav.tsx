@@ -94,6 +94,9 @@ export function NavColumn({
   })
   const openTimer = useRef<number | undefined>(undefined)
   const closeTimer = useRef<number | undefined>(undefined)
+  /** RESUME was just clicked: the rail folds back beside About and stays folded, even under a still
+      or moving pointer, until the pointer leaves the rail (then hover works as usual again). */
+  const keepFolded = useRef(false)
 
   const setNav = useCallback(
     (el: HTMLElement | null) => {
@@ -148,7 +151,7 @@ export function NavColumn({
   }, [setOpen])
 
   const onPointerMove = (e: ReactPointerEvent) => {
-    if (e.pointerType === 'touch' || !moved.current) return
+    if (e.pointerType === 'touch' || !moved.current || keepFolded.current) return
     window.clearTimeout(closeTimer.current)
     closeTimer.current = undefined
     if (isOpen.current || openTimer.current !== undefined || squeeze.get() === 0) return
@@ -158,6 +161,7 @@ export function NavColumn({
     }, RAIL_OPEN_DELAY)
   }
   const onPointerLeave = () => {
+    keepFolded.current = false
     window.clearTimeout(openTimer.current)
     openTimer.current = undefined
     if (isOpen.current && closeTimer.current === undefined) {
@@ -288,7 +292,17 @@ export function NavColumn({
           <ArtButton
             name="resume-wide"
             label="Resume"
-            onClick={onResume}
+            onClick={
+              onResume &&
+              (() => {
+                // About lands beside the docked rail: fold it now, rather than leaving it opened over
+                // About while the pointer is still on it.
+                clearTimers()
+                setOpen(false)
+                keepFolded.current = true
+                onResume()
+              })
+            }
             href={onResume ? undefined : (resumeHref ?? resumePdf)}
             active={resumeActive}
             className="relative mb-[10px] w-full"
