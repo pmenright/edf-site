@@ -322,28 +322,9 @@ export function NavColumn({
 }
 
 /**
- * Phones and upright tablets: CONTACT, at the top right of the page. It opens the contact popup.
- * (RESUME is in the DESIGN / VIDEO row, MobileNavRow.)
- */
-export function MobileContactBar() {
-  // pb-3 makes it a 44px-tall target; the extra hangs invisibly below the tab.
-  const link =
-    'block w-full cursor-pointer pt-2.5 pb-3 text-center font-ddc text-[clamp(16px,5vw,22px)] leading-8 text-sand outline-offset-[-3px] focus-visible:outline-2 focus-visible:outline-sand md:text-[18px]'
-  return (
-    <div className="absolute inset-x-0 top-0 z-10 flex justify-end">
-      <div className="h-[35px] w-[40%] max-w-[240px] min-w-[140px] bg-ink sm:h-[31px] sm:w-[25vw]">
-        <button type="button" aria-haspopup="dialog" onClick={openContact} className={link}>
-          Contact
-        </button>
-      </div>
-    </div>
-  )
-}
-
-/**
- * Mobile and tablet: the DESIGN / VIDEO row under the hero. Once scrolled to, it sticks to the top of
- * the screen, so switching sides never means scrolling back up (and from the about / resume panel,
- * either one goes back to the work). Its height is --mnav-h (index.css).
+ * Mobile and tablet: the DESIGN / VIDEO | RESUME row, at the top of the page and stuck there, so
+ * switching sides never means scrolling back up (and from the about / resume panel, either one goes
+ * back to the work). Its height is --mnav-h (index.css).
  */
 export function MobileNavRow({
   category,

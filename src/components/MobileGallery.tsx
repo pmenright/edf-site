@@ -6,7 +6,7 @@ import type { AboutState } from '../hooks/useAboutHash'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 import { openContact } from '../lib/contact'
 import { Hero } from './Hero'
-import { MobileContactBar, MobileNavRow } from './Nav'
+import { MobileNavRow } from './Nav'
 import { ProjectPanel } from './ProjectPanel'
 
 interface GalleryProps {
@@ -36,7 +36,7 @@ function useColumns() {
 
 /**
  * Phones, tablets, and any screen that isn't wide enough for the desktop strip: a normal vertical page.
- * Bar with CONTACT and RESUME, hero, the DESIGN / VIDEO row (it sticks to the top once scrolled to),
+ * The DESIGN / VIDEO | RESUME row (stuck to the top of the screen), the hero with CONTACT under it,
  * the work as square tiles, then a ribbon with CONTACT. Switching category slides the two
  * sides sideways; if the page was scrolled into the work, the new side starts at its first project
  * (like the desktop strip). Each side is only as tall as its own tiles, so the page ends right after
@@ -190,8 +190,6 @@ export function MobileGallery({ category, onCategory, onOpen, startAtWork, start
       >
         Skip to work
       </a>
-      <MobileContactBar />
-      <Hero className="mobile-hero w-full" />
       <MobileNavRow
         category={category}
         onCategory={onCategory}
@@ -199,6 +197,7 @@ export function MobileGallery({ category, onCategory, onOpen, startAtWork, start
         onResume={() => onAbout(0)}
         resumeActive={about.open}
       />
+      <Hero onContact={openContact} className="mobile-hero w-full" />
       <div ref={work} aria-hidden="true" className="scroll-mt-[var(--mnav-h)]" />
       <div
         ref={columns}
