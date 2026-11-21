@@ -690,6 +690,32 @@
       "work skl"
       "work edu";
   }
+  /*
+    The largest screens (1920px and up): a dotted shadow off the sheet's lower left, three dots deep
+    (Jim's mockup). It's a copy of the sheet's outline, shifted three dots left and three down and
+    tiled with Jim's dot (src/assets/about/dot.svg, used as drawn), behind the sheet, so only the
+    strips that stick out show. The dots are 0.42 of the board's text size apart, in whole pixels.
+  */
+  @media (min-width: 1920px) {
+    .resume-sheet {
+      position: relative;
+    }
+    .resume-sheet::before {
+      --dot: 0.42em;
+      content: "";
+      position: absolute;
+      inset: calc(var(--dot) * 3) calc(var(--dot) * 3) calc(var(--dot) * -3) calc(var(--dot) * -3);
+      z-index: -1;
+      background: url("../assets/about/dot.svg") 0 0 / var(--dot) var(--dot) repeat;
+      pointer-events: none;
+    }
+    @supports (width: round(1.5px, 1px)) {
+      .resume-sheet::before {
+        --dot: max(6px, round(0.42em, 1px));
+      }
+    }
+  }
+
   /* Honors as two columns (each award in the column resume.json names, each under the last), and
      education as three, in the wide right column. */
   .resume-honor-cols {
