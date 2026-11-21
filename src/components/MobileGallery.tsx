@@ -199,9 +199,10 @@ export function MobileGallery({ category, onCategory, onOpen, startAtWork, start
       />
       <Hero onContact={openContact} className="mobile-hero w-full" />
       <div ref={work} aria-hidden="true" className="scroll-mt-[var(--mnav-h)]" />
+      {/* Clipped, not hidden: an overflow: hidden box would stop the resume's job tabs from sticking. */}
       <div
         ref={columns}
-        className="overflow-hidden"
+        className="track-clip"
         style={{ height: (about.open ? heights.about : heights[category]) || undefined }}
       >
         {/* The work (its two sides) and the about / resume panel, side by side. */}

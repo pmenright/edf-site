@@ -1341,6 +1341,23 @@
     --tab-gap: 4px;
     --tab-pad: 0.3em;
   }
+  /*
+    While the jobs scroll past, the tabs stay put a little under the DESIGN / VIDEO row (sticky, within
+    the work experience section), so the next job is a tap away from the bottom of the last. Sand
+    behind them and in the strip above them (the shadow), so nothing shows through as the jobs pass.
+  */
+  .resume-doc .job-tabs {
+    position: sticky;
+    top: calc(var(--mnav-h, 0px) + 10px);
+    z-index: 3;
+    background: var(--color-sand);
+    box-shadow: 0 -10px 0 var(--color-sand);
+  }
+  /* The phone page's sides (work, about / resume): clipped, not a scroll box, so sticky still works. */
+  .track-clip {
+    overflow: hidden;
+    overflow: clip;
+  }
   .resume-doc .job-tab {
     flex: 1 1 auto;
     min-width: min-content;

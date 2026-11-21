@@ -198,13 +198,30 @@ function DocSection({ title, children }: { title: string; children: ReactNode })
  * The open tab sits down on the rule over the job, joined to it like a folder tab; the others float
  * just above it. On the desktop board (`reserve`) every job's panel stays in the layout (only the
  * open one shows), so the section is always as tall as the longest job and nothing jumps when
- * switching; on phones only the open job takes up room.
+ * switching; on phones only the open job takes up room, and the tabs stick under the DESIGN / VIDEO
+ * row while the jobs scroll past (.resume-doc .job-tabs in index.css), so the next tab is always in
+ * reach. Picking a tab while they're stuck starts the new job just under them.
  * Keyboard: arrow keys (and Home / End) move between tabs.
  */
 function WorkTabs({ reserve = true }: { reserve?: boolean }) {
   const [open, setOpen] = useState(0)
   const id = useId()
   const tabs = useRef<(HTMLButtonElement | null)[]>([])
+  const box = useRef<HTMLDivElement>(null)
+  const row = useRef<HTMLDivElement>(null)
+  /** Phones: the tabs were stuck when a new one was picked, so bring the new job's start up under them. */
+  const toStart = useRef(false)
+  const stuckAt = () => (row.current ? parseFloat(getComputedStyle(row.current).top) || 0 : 0)
+  const select = (i: number) => {
+    if (!reserve && box.current && box.current.getBoundingClientRect().top < stuckAt() - 1) toStart.current = true
+    setOpen(i)
+  }
+  useLayoutEffect(() => {
+    if (!toStart.current || !box.current) return
+    toStart.current = false
+    window.scrollBy({ top: box.current.getBoundingClientRect().top - stuckAt(), behavior: 'instant' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const last = resume.work.length - 1
     const to =
@@ -216,12 +233,12 @@ function WorkTabs({ reserve = true }: { reserve?: boolean }) {
     if (to === null) return
     e.preventDefault()
     e.stopPropagation() // not a page turn (AboutLayer listens for arrow keys)
-    setOpen(to)
+    select(to)
     tabs.current[to]?.focus()
   }
   return (
-    <div className="job-tabs-box" data-reserve={reserve || undefined}>
-      <div role="tablist" aria-label="Jobs" className="job-tabs" onKeyDown={onKeyDown}>
+    <div ref={box} className="job-tabs-box" data-reserve={reserve || undefined}>
+      <div ref={row} role="tablist" aria-label="Jobs" className="job-tabs" onKeyDown={onKeyDown}>
         {resume.work.map((job, i) => (
           <button
             key={job.org}
@@ -235,7 +252,7 @@ function WorkTabs({ reserve = true }: { reserve?: boolean }) {
             aria-controls={`${id}-panel-${i}`}
             tabIndex={open === i ? 0 : -1}
             data-current={job.current || undefined}
-            onClick={() => setOpen(i)}
+            onClick={() => select(i)}
             className="job-tab"
           >
             <span className="job-tab-name">{!reserve && job.tabShort ? job.tabShort : job.tab}</span>
