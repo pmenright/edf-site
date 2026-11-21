@@ -4,10 +4,8 @@ import { POPUP_BUTTON, POPUP_BUTTON_FILLED, POPUP_BUTTON_OUTLINED } from '../lib
 import { clearCheck, humanCheck, loadTurnstile } from '../lib/turnstile'
 
 const { endpoint, turnstileSiteKey } = site.forms
-/** The relay is set up (forms in site.json). Until then, SEND opens the visitor's email app instead. */
-const live = Boolean(endpoint && turnstileSiteKey)
 
-type Status = 'idle' | 'sending' | 'sent' | 'failed' | 'mailed'
+type Status = 'idle' | 'sending' | 'sent' | 'failed'
 
 const LABEL = 'block font-ddc text-[14px] tracking-[0.12em] uppercase'
 const FIELD =
@@ -16,8 +14,8 @@ const FIELD =
 /**
  * The CONTACT popup's form: name, email and message, sent through the EDF form relay (form-relay/, a
  * Cloudflare Worker that emails Jim) with a Turnstile bot check and a hidden "website" field that
- * only bots fill in. Before the relay is set up, SEND opens the visitor's email app with the message
- * already written.
+ * only bots fill in. Jim's address isn't on the site anywhere (2026-11-21), so a failed send just
+ * asks to try again.
  */
 export function ContactForm() {
   const [status, setStatus] = useState<Status>('idle')
@@ -32,14 +30,6 @@ export function ContactForm() {
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const data = new FormData(e.currentTarget)
-    if (!live) {
-      const text = (key: string) => String(data.get(key) || '').trim()
-      const subject = `Portfolio message${text('Name') ? ` from ${text('Name')}` : ''}`
-      const body = `${text('Message')}\n\n${text('Name')}\n${text('Email')}`.trim()
-      window.location.href = `mailto:${site.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-      setStatus('mailed')
-      return
-    }
     setStatus('sending')
     try {
       data.set('_form', 'Portfolio contact')
@@ -75,7 +65,7 @@ export function ContactForm() {
       ref={form}
       onSubmit={onSubmit}
       onFocus={() => {
-        if (live) loadTurnstile().catch(() => {})
+        loadTurnstile().catch(() => {})
       }}
       className="mx-auto mt-8 grid max-w-[460px] gap-4 text-left"
     >
@@ -108,16 +98,7 @@ export function ContactForm() {
           <span className={`${POPUP_BUTTON} ${POPUP_BUTTON_FILLED} min-w-[120px] px-6`}>{status === 'sending' ? 'Sending…' : 'Send'}</span>
         </button>
         <p role={status === 'failed' ? 'alert' : 'status'} className="mt-3 font-text text-[16px] leading-[1.35] tracking-normal text-balance normal-case empty:mt-0">
-          {status === 'failed' && (
-            <>
-              That didn't send. Please try again, or email me at{' '}
-              <a href={`mailto:${site.email}`} className="underline decoration-sand/50 underline-offset-4 hover:decoration-sand">
-                {site.email}
-              </a>
-              .
-            </>
-          )}
-          {status === 'mailed' && 'Your email app should open with your message ready to send.'}
+          {status === 'failed' && "That didn't send. Please try again in a moment."}
         </p>
       </div>
     </form>

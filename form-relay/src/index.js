@@ -56,7 +56,7 @@ export default {
     }
     if (request.method !== 'POST') return reply(405, { ok: false, error: 'method' })
     if (!okOrigin) return reply(403, { ok: false, error: 'origin' })
-    if (!env.TURNSTILE_SECRET || !env.FROM_ADDRESS || !env.TO_ADDRESS || !env.EMAIL) {
+    if (!env.TURNSTILE_SECRET || !env.FROM_ADDRESS || !env.MAIL_TO || !env.EMAIL) {
       console.error('form relay is not configured')
       return reply(500, { ok: false, error: 'not-configured' })
     }
@@ -95,7 +95,7 @@ export default {
 
     const message = {
       from: { email: env.FROM_ADDRESS, name: env.FROM_NAME || 'Website form' },
-      to: env.TO_ADDRESS,
+      to: env.MAIL_TO, // a secret (npx wrangler secret put MAIL_TO), so the address isn't in the repo
       subject: clip(`${formName}: message${name ? ` from ${name}` : ''}`, 150),
       text,
     }

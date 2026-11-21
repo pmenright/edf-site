@@ -29,7 +29,7 @@ export interface Job {
   dates: string
   /** Highlighted as the current job. */
   current?: boolean
-  /** An ink banner after the job's lines, with the email address, COPY and EMAIL (freelance). */
+  /** An ink banner after the job's lines, with CONTACT, which opens the contact form (freelance). */
   banner?: { title: string; text: string }
   bullets: Bullet[]
   units?: Unit[]

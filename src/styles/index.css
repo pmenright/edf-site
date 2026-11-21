@@ -947,7 +947,7 @@
     visibility: visible;
   }
 
-  /* The freelance tab's banner: ink, with the email address, COPY and EMAIL. */
+  /* The freelance tab's banner: ink, with CONTACT (opens the contact form). */
   .resume-banner {
     margin-top: 1.4em;
     padding: 1.15em 1.5em 1.5em;
@@ -974,22 +974,6 @@
     justify-content: center;
     gap: 0.9em 1.2em;
     margin-top: 1.3em;
-  }
-  .resume-banner-email {
-    font-family: var(--font-ddc);
-    font-size: 1.4em;
-    letter-spacing: 0.06em;
-    text-decoration: underline 2px var(--color-pal-taupe);
-    text-underline-offset: 0.3em;
-    overflow-wrap: anywhere;
-    transition: text-decoration-color 0.15s;
-  }
-  .resume-banner-email:hover {
-    text-decoration-color: var(--color-sand);
-  }
-  .resume-banner-email:focus-visible {
-    outline: 2px solid var(--color-sand);
-    outline-offset: 4px;
   }
   .resume-banner-button {
     display: block;

@@ -1,7 +1,6 @@
 import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { projectById, site, withBase } from '../content'
 import { openContact } from '../lib/contact'
-import { useCopy } from '../lib/copy'
 import { openResume } from '../lib/resume'
 import { showProject } from '../lib/viewer'
 import { AwardIcon } from './AwardIcon'
@@ -323,14 +322,12 @@ function JobEntry({ job }: { job: Job }) {
   )
 }
 
-const mail = `mailto:${site.email}`
-
 /**
- * The freelance tab's ink banner (Jim's mockup): OPEN FOR NEW CLIENTS!, a line, then the email
- * address (a mail link), COPY and EMAIL, like the contact popup.
+ * The freelance tab's ink banner (Jim's mockup): OPEN FOR NEW CLIENTS!, a line, then CONTACT, which
+ * opens the contact form (it replaced the email address, COPY and EMAIL on 2026-11-21: Jim's address
+ * isn't on the site anywhere now that the form delivers).
  */
 function ClientBanner({ title, text }: { title: string; text: string }) {
-  const { copied, copy } = useCopy(site.email)
   const id = useId()
   return (
     <aside className="resume-banner" aria-labelledby={id}>
@@ -339,27 +336,10 @@ function ClientBanner({ title, text }: { title: string; text: string }) {
       </h5>
       <p className="resume-banner-text">{text}</p>
       <div className="resume-banner-actions">
-        <a href={mail} className="resume-banner-email">
-          {site.email}
-        </a>
-        <div className="flex gap-[0.7em]">
-          <button type="button" onClick={() => copy()} aria-label="Copy email address" className="resume-banner-button">
-            {/* Both words in the same spot, so the button keeps its width when the label changes. */}
-            <span className="grid">
-              <span className={`col-start-1 row-start-1 ${copied ? 'invisible' : ''}`}>Copy</span>
-              <span className={`col-start-1 row-start-1 ${copied ? '' : 'invisible'}`} aria-hidden="true">
-                Copied
-              </span>
-            </span>
-          </button>
-          <a href={mail} aria-label={`Email ${site.email}`} className="resume-banner-button" data-filled="">
-            <span>Email</span>
-          </a>
-        </div>
+        <button type="button" aria-haspopup="dialog" onClick={openContact} className="resume-banner-button" data-filled="">
+          Contact
+        </button>
       </div>
-      <p role="status" className="sr-only">
-        {copied ? 'Email address copied' : ''}
-      </p>
     </aside>
   )
 }

@@ -2,11 +2,11 @@
 
 The site's contact forms (the CONTACT popup on the main site, and both forms on the Nsyte copy) post
 to this small Cloudflare Worker. It checks that the post came from the site and passed Cloudflare
-Turnstile (the bot check), then emails it to pmenright@gmail.com, with Reply going straight to the
-visitor. It stores nothing and logs nothing about the messages. It's free (Cloudflare's free plan).
+Turnstile (the bot check), then emails it to Jim's Gmail, with Reply going straight to the visitor.
+It stores nothing and logs nothing about the messages. It's free (Cloudflare's free plan).
 
-Until it's set up, the forms open the visitor's email app with their message already written, so
-nothing is broken in the meantime.
+The address it sends to is a secret (`MAIL_TO`), not in this repo: since November 21, 2026 Jim's
+email address isn't anywhere on the site or in its files, and the forms are the way to reach him.
 
 ## One-time setup
 
@@ -22,7 +22,7 @@ nothing is broken in the meantime.
    two Cloudflare shows you. Wait for Cloudflare's email saying the domain is **Active** (usually
    under an hour, at most a day).
 4. **Email Routing.** In Cloudflare: **Email**, **Email Routing** for the domain. Enable it and accept
-   the records it adds. Add **pmenright@gmail.com** as a destination address and click the
+   the records it adds. Add your Gmail address as a destination address and click the
    verification link Cloudflare emails you. Then **Settings**, **Subdomains**: add **`forms`**. The
    relay sends from `website@forms.enrightdesignfoundry.com`, so the main domain stays free for
    whatever email you set up later.
@@ -43,11 +43,13 @@ From this folder on your Mac:
 cd ~/Documents/Portfolio\ Site/React\ Tailwind\ Rebuild\ 2026/edf-site/form-relay
 npx wrangler login
 npx wrangler secret put TURNSTILE_SECRET
+npx wrangler secret put MAIL_TO
 npx wrangler deploy
 ```
 
 - `login` opens the browser to approve Wrangler (Cloudflare's command-line tool).
-- `secret put` asks for the Turnstile **Secret Key**: paste it.
+- `secret put TURNSTILE_SECRET` asks for the Turnstile **Secret Key**: paste it.
+- `secret put MAIL_TO` asks for the address messages go to: your verified Gmail.
 - `deploy` may ask you to pick a workers.dev name, then prints the relay's address, like
   `https://edf-forms.yourname.workers.dev`.
 
@@ -66,11 +68,13 @@ it "Not spam".
 
 None routine. Things worth knowing:
 
-- **Changing the Turnstile secret:** run `npx wrangler secret put TURNSTILE_SECRET` again.
+- **Changing the Turnstile secret, or where messages go:** run `npx wrangler secret put TURNSTILE_SECRET`
+  (or `MAIL_TO`) again. A new `MAIL_TO` has to be a verified destination in Email Routing first.
 - **Something not arriving?** `npx wrangler tail` shows the relay's activity live while you send a
   test (it logs only Cloudflare's error code on a failed send, never the message).
-- **Settings** (sender address, where it sends, which pages may post) are in `wrangler.jsonc`;
-  run `npx wrangler deploy` after changing them. The binding can only send to the verified address.
+- **Settings** (sender address and which pages may post) are in `wrangler.jsonc`; run
+  `npx wrangler deploy` after changing them. Cloudflare only delivers to verified destination
+  addresses, and the Worker only sends to `MAIL_TO`.
 - **Tests:** `npm run test:forms` from the site's folder.
 
 ## What happens to a message

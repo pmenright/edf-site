@@ -9,11 +9,10 @@
   'use strict'
 
   // Form delivery: the EDF form relay (form-relay/ in the site's repo, a Cloudflare Worker that emails
-  // Jim) and the site key of its Turnstile bot check. Both are public. Until they're filled in,
-  // submitting opens the visitor's email app with the message already written.
+  // Jim) and the site key of its Turnstile bot check. Both are public. Jim's address is in neither,
+  // and nowhere on the page (2026-11-21).
   var FORM_ENDPOINT = 'https://edf-forms.edfwork.workers.dev/'
   var TURNSTILE_SITE_KEY = '0x4AAAAAAGL_PX6r9BP90qAX'
-  var EMAIL = 'pmenright@gmail.com'
   // Shown in place of the form once a message has gone through.
   var SENT_NOTE = "Thank you for reaching out. You'll be hearing from me."
   var POPOUT_TITLE = "I'm glad you liked my work. Let's talk about your project!"
@@ -47,17 +46,9 @@
       done.style.display = 'block'
       fail.style.display = 'none'
     } else {
-      fail.firstElementChild.textContent = "That didn't send. Please try again, or email me at " + EMAIL + '.'
+      fail.firstElementChild.textContent = "That didn't send. Please try again in a moment."
       fail.style.display = 'block'
     }
-  }
-
-  function sendByEmailApp(form, fields) {
-    var name = fields.filter(function (f) { return /name/i.test(f.label) })[0]
-    var subject = 'Portfolio (Nsyte) message' + (name && name.value ? ' from ' + name.value : '')
-    var body = fields.map(function (f) { return f.label + ':\n' + f.value }).join('\n\n')
-    window.location.href = 'mailto:' + EMAIL + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body)
-    show(form, true, 'Thanks!')
   }
 
   // Cloudflare Turnstile, the bot check: its script loads the first time someone starts on a form
@@ -160,9 +151,7 @@
     if (!form.closest || !form.closest('.w-form')) return
     e.preventDefault()
     e.stopImmediatePropagation()
-    var fields = fieldsOf(form)
-    if (FORM_ENDPOINT && TURNSTILE_SITE_KEY) sendByRelay(form, fields)
-    else sendByEmailApp(form, fields)
+    sendByRelay(form, fieldsOf(form))
   }, true)
 
   // ---------- popout ----------

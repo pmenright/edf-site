@@ -12,7 +12,7 @@ function env(extra = {}) {
     TURNSTILE_SECRET: 'secret-123',
     FROM_ADDRESS: 'website@forms.enrightdesignfoundry.com',
     FROM_NAME: 'EDF website',
-    TO_ADDRESS: 'pmenright@gmail.com',
+    MAIL_TO: 'owner@example.com',
     ALLOWED_ORIGINS: `${ORIGIN},http://localhost:5173`,
     EMAIL: { send: async (m) => { sent.push(m); return { messageId: 'x' } } },
     ...extra,
@@ -82,7 +82,7 @@ test('a good message is checked with Turnstile and emailed', async () => {
   assert.equal(sent.length, 1)
   const m = sent[0]
   assert.deepEqual(m.from, { email: 'website@forms.enrightdesignfoundry.com', name: 'EDF website' })
-  assert.equal(m.to, 'pmenright@gmail.com')
+  assert.equal(m.to, 'owner@example.com')
   assert.equal(m.subject, 'Portfolio contact: message from Ada Lovelace')
   assert.equal(m.replyTo, 'ada@example.com')
   assert.match(m.text, /^name:\nAda Lovelace\n\nemail:\nada@example.com\n\nmessage:\nHello!\nTwo lines\./)
