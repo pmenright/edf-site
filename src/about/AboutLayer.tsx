@@ -90,11 +90,13 @@ export function AboutStack() {
           <AboutIntro />
         </section>
       ) : (
-        <section aria-label="About" className="px-[6%] pt-12 pb-12">
+        // No top padding: the portrait's own space above the head is the gap (under the pinned hero,
+        // and under the DESIGN / VIDEO row).
+        <section aria-label="About" className="px-[6%] pb-12">
           <AboutIntro stacked />
         </section>
       )}
-      <section data-about-resume="" aria-label="Resume" className="bg-sand px-[6%] pt-10 pb-14 text-ink">
+      <section data-about-resume="" aria-label="Resume" className="about-resume bg-sand pt-10 pb-14 text-ink">
         <ResumeDocument />
       </section>
     </div>

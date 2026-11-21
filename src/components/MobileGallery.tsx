@@ -257,14 +257,15 @@ export function MobileGallery({ category, onCategory, onOpen, startAtWork, start
   )
 }
 
-/** After the work: the contact popup, in a sand ribbon like the DESIGN / VIDEO row. */
+/** After the work (or the resume): an ink ribbon with a cream CONTACT button in it, to set it off.
+    Hover turns the button to a cream outline. Opens the contact popup. */
 function BottomRibbon() {
   const button =
     'group grid h-11 cursor-pointer place-items-center outline-none'
   const face =
-    'block h-10 border-2 border-ink px-6 font-ddc text-[16px] leading-[36px] tracking-[0.08em] text-ink uppercase transition-colors group-hover:bg-ink group-hover:text-sand group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-ink'
+    'block h-10 border-2 border-sand bg-sand px-6 font-ddc text-[16px] leading-[36px] tracking-[0.08em] text-ink uppercase transition-colors group-hover:bg-ink group-hover:text-sand group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-sand'
   return (
-    <nav aria-label="More" className="flex items-center justify-center gap-4 bg-sand px-4 py-4">
+    <nav aria-label="More" className="flex items-center justify-center gap-4 bg-ink px-4 py-5">
       <button type="button" aria-haspopup="dialog" onClick={openContact} className={button}>
         <span className={face}>Contact</span>
       </button>

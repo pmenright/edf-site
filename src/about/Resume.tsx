@@ -116,7 +116,7 @@ function useFitText() {
 export function ResumeDocument() {
   return (
     <div className="resume-doc">
-      <header className="mb-7 flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-b-[3px] border-ink pb-4">
+      <header className="mb-5 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div>
           <h2 className="font-ddc text-[2em] leading-none tracking-[0.03em] uppercase">{resume.name}</h2>
           <p className="mt-1.5 font-text text-[0.9em] font-medium tracking-[0.1em] text-pal-char uppercase">
@@ -125,21 +125,23 @@ export function ResumeDocument() {
         </div>
         <PdfButton />
       </header>
-      <DocSection title="Summary">
-        <p className="resume-summary">{resume.summary}</p>
-      </DocSection>
-      <DocSection title="Work experience">
-        <WorkTabs reserve={false} />
-      </DocSection>
-      <DocSection title="Honors & awards">
-        <HonorList />
-      </DocSection>
-      <DocSection title="Skills & interests">
-        <SkillList />
-      </DocSection>
-      <DocSection title="Education">
-        <EducationList />
-      </DocSection>
+      <div className="resume-doc-sheet">
+        <DocSection title="Summary">
+          <p className="resume-summary">{resume.summary}</p>
+        </DocSection>
+        <DocSection title="Work experience">
+          <WorkTabs reserve={false} />
+        </DocSection>
+        <DocSection title="Honors & awards">
+          <HonorList />
+        </DocSection>
+        <DocSection title="Skills & interests">
+          <SkillList />
+        </DocSection>
+        <DocSection title="Education">
+          <EducationList />
+        </DocSection>
+      </div>
     </div>
   )
 }
@@ -180,7 +182,7 @@ function Card({ area, title, children }: { area: string; title: string; children
 
 function DocSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="mt-10 first-of-type:mt-0">
+    <section className="resume-doc-card">
       <h3 className="resume-card-head">{title}</h3>
       <div>{children}</div>
     </section>

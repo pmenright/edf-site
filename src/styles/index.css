@@ -149,6 +149,43 @@
     height: calc(100svh - var(--mnav-h));
     min-height: 260px;
   }
+  /*
+    Phones and tablets (Hero.tsx, PinnedHero): the lockup and CONTACT, centered on the first screen,
+    hold still (sticky) while the page scrolls up under them. The hero's bottom padding is twice the
+    lockup-to-button gap, so when what follows the hero gets that close to CONTACT, it all scrolls
+    on together. --hero-g is the pair's measured height; --hero-top centers it.
+  */
+  .hero-pinned {
+    --hero-gap: 20px;
+    --hero-top: max(0px, calc((100svh - var(--mnav-h) - var(--hero-g, 0px)) / 2));
+    /* flow-root: the pair's top margin stays inside the hero (no margin collapsing out through it). */
+    display: flow-root;
+    padding: 0 5% calc(var(--hero-gap) * 2);
+  }
+  @media (max-height: 500px) {
+    .hero-pinned {
+      --hero-gap: 12px;
+    }
+  }
+  .hero-group {
+    position: sticky;
+    top: calc(var(--mnav-h) + var(--hero-top));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: var(--hero-top);
+  }
+  /* Full width (up to 1000px), but never so tall the pair can't fit with its gaps (phones on their side). */
+  .hero-lockup {
+    width: 100%;
+    max-width: 1000px;
+    height: auto;
+    max-height: calc(100svh - var(--mnav-h) - 44px - var(--hero-gap) * 5);
+    object-fit: contain;
+  }
+  .hero-contact {
+    margin-top: var(--hero-gap);
+  }
 
   /* Keyboard focus on a project tile: ink / sand / ink bands, so the ring shows on any artwork,
      light or dark. Drawn on ::after because the image would cover the button's own box-shadow. */
@@ -781,16 +818,25 @@
     along the bottom of the row, behind the tabs, so the open tab ends exactly where the rule does
     (no border rounding to fall out of step with). Every tab is the same height whichever is open
     (the open one's extra bottom padding equals the float gap plus the rule), so the labels never move.
+    One space, --tab-gap, sits between the tabs and between the closed tabs and the rule, in whole
+    pixels so the two always match exactly.
   */
   .job-tabs-box {
     display: flex;
     flex-direction: column;
   }
   .job-tabs {
+    --tab-gap: 0.35em;
+    --tab-pad: 0.45em;
     position: relative;
     display: flex;
     align-items: stretch;
-    gap: 0.4em;
+    gap: var(--tab-gap);
+  }
+  @supports (width: round(1.5px, 1px)) {
+    .job-tabs {
+      --tab-gap: max(3px, round(0.35em, 1px));
+    }
   }
   .job-tabs::after {
     content: "";
@@ -809,8 +855,8 @@
     position: relative;
     z-index: 1;
     min-width: 0;
-    margin-bottom: calc(0.35em + var(--rule));
-    padding: 0.55em 0.8em 0.45em;
+    margin-bottom: calc(var(--tab-gap) + var(--rule));
+    padding: 0.55em 0.8em var(--tab-pad);
     border: var(--rule) solid var(--color-ink);
     background: var(--color-pal-khaki);
     color: var(--color-ink);
@@ -823,7 +869,7 @@
   }
   .job-tab[aria-selected="true"] {
     margin-bottom: 0;
-    padding-bottom: calc(0.8em + var(--rule) * 2);
+    padding-bottom: calc(var(--tab-pad) + var(--tab-gap) + var(--rule) * 2);
     border-bottom: 0;
     background: var(--color-sand);
     cursor: default;
@@ -1203,7 +1249,7 @@
 
   /* Phones and tablets: the whole resume, one column, on sand. */
   .resume-doc {
-    max-width: 760px;
+    max-width: 836px;
     margin: 0 auto;
     font-family: var(--font-text);
     font-size: 15px;
@@ -1217,6 +1263,40 @@
     margin-bottom: 0.6em;
     font-size: 1.75em;
   }
+  /*
+    Phones and tablets: each section boxed, like the desktop sheet. The sections are sand cells on an
+    ink grid, so the ink between them (and the ink frame around them) draws the rules, in whole pixels.
+  */
+  .resume-doc-sheet {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--rule);
+    padding: var(--rule);
+    background: var(--color-ink);
+  }
+  .resume-doc-card {
+    min-width: 0;
+    padding: 1.35em clamp(12px, 3vw, 32px) 1.6em;
+    background: var(--color-sand);
+    /* The job tabs size their labels to this section's width (cqi, below), not the screen's. */
+    container-type: inline-size;
+  }
+  /* The page around the sheet: snug on phones, roomier on tablets. Whole pixels, and centered on a
+     whole pixel, so the frame's edges stay crisp. */
+  .about-resume {
+    padding-inline: max(10px, calc(4vw - 6px));
+  }
+  @supports (width: round(down, 1.5px, 1px)) {
+    .about-resume {
+      padding-inline: max(10px, round(down, 4vw - 6px, 1px));
+    }
+    .resume-doc-card {
+      padding-inline: clamp(12px, round(down, 3vw, 1px), 32px);
+    }
+    .about-resume > .resume-doc {
+      margin-left: max(0px, round(down, (100% - 836px) / 2, 1px));
+    }
+  }
   .resume-doc .resume-job-head,
   .resume-doc .resume-unit-head {
     flex-wrap: wrap;
@@ -1227,22 +1307,27 @@
     --rule: 2px;
   }
   /* Sized so each name fits on one line on phones (the tabs use the short names here, "Fathom5"):
-     the labels scale down with the screen on small phones. If a name ever doesn't fit, it wraps
+     the labels scale with the section (cqi) on small phones. If a name ever doesn't fit, it wraps
      rather than running past the tab; the years wrap first. */
+  /* Compact tabs: snug padding and a tighter --tab-gap, so the labels get the room. */
   .resume-doc .job-tabs {
-    gap: 0.2em;
+    --tab-gap: 4px;
+    --tab-pad: 0.3em;
   }
   .resume-doc .job-tab {
     flex: 1 1 auto;
     min-width: min-content;
-    padding-inline: 0.38em;
+    gap: 0.15em;
+    /* Not the bottom: that's --tab-pad (closed) or the taller open-tab padding, from .job-tab. */
+    padding-top: 0.4em;
+    padding-inline: 0.28em;
   }
   .resume-doc .job-tab-name {
-    font-size: min(0.82em, max(10px, 3.1vw));
+    font-size: min(0.86em, max(9.5px, 3.6cqi));
     letter-spacing: 0.03em;
   }
   .resume-doc .job-tab-years {
-    font-size: min(0.74em, max(9.5px, 2.8vw));
+    font-size: min(0.77em, max(9px, 3.25cqi));
     line-height: 1.15;
     white-space: normal;
   }
