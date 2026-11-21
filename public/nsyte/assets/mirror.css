@@ -378,6 +378,48 @@
   }
 }
 
+/* Phones (479px and narrower; Jim, 2026-11-21): the header carries the button again (the site hid it
+   here and showed one under the blurb instead). The logo on the left is the button's height (the
+   button at 100px wide, as it was under the blurb, is 50px tall), the button on the right, both
+   centered in the band. The button under the blurb goes, and the next section starts 40px below the
+   blurb (the same space as above it) instead of 80px. */
+@media screen and (max-width: 479px) {
+  .div_masthead .link-block-3 {
+    margin-left: 0;
+  }
+  .div_masthead .image-3 {
+    height: 50px;
+    margin-left: 0;
+  }
+  .div_masthead .div_hastheadcontact {
+    display: flex;
+    align-items: center;
+  }
+  .div_masthead .btn_demo-masthead {
+    width: 100px;
+  }
+  .mirror-hero-text .link-block-5 {
+    display: none;
+  }
+  .section_benefits .div_workflow {
+    margin-top: 40px;
+  }
+}
+
+/* Phones: each benefit is its icon on top and its words below (they only stacked when the words ran
+   out of room, so the last one, spanning both columns, sat sideways). The last one is one column wide,
+   centered under the other four. */
+@media screen and (max-width: 479px) {
+  .div_benefitblocks .div_benefit {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+  }
+  .div_benefitblocks .div_benefit:last-child {
+    width: calc((100% - 16px) / 2);
+  }
+}
+
 /* Body text: Webflow jumps from 16px to 24px at 1440px wide. In between it now grows smoothly
    (17px at 992px up to 24px, line spacing 20px up to 25px), meeting Webflow's sizes at both ends,
    so a window just under 1440 doesn't get small text. */
