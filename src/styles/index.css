@@ -1225,9 +1225,9 @@
   .resume-doc {
     --rule: 2px;
   }
-  /* Each name on one line (the tabs use the short names here, "Fathom5"), each tab at least as wide
-     as its name; the labels scale down with the screen on small phones, so all four fit on one row
-     down to 320px wide. The years wrap if they must. */
+  /* Sized so each name fits on one line on phones (the tabs use the short names here, "Fathom5"):
+     the labels scale down with the screen on small phones. If a name ever doesn't fit, it wraps
+     rather than running past the tab; the years wrap first. */
   .resume-doc .job-tabs {
     gap: 0.2em;
   }
@@ -1239,12 +1239,29 @@
   .resume-doc .job-tab-name {
     font-size: min(0.82em, max(10px, 3.1vw));
     letter-spacing: 0.03em;
-    white-space: nowrap;
   }
   .resume-doc .job-tab-years {
     font-size: min(0.74em, max(9.5px, 2.8vw));
     line-height: 1.15;
     white-space: normal;
+  }
+  /* Screen readers always get the long form; the narrowest phones (320px) see "2021–26", which keeps
+     the years on one line there too. */
+  .job-years-short {
+    display: none;
+  }
+  @media (max-width: 359px) {
+    .resume-doc .job-years-long {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+    .resume-doc .job-years-short {
+      display: inline;
+    }
   }
   .resume-doc .resume-banner {
     padding: 1em 1.1em 1.2em;

@@ -233,7 +233,13 @@ function WorkTabs({ reserve = true }: { reserve?: boolean }) {
             className="job-tab"
           >
             <span className="job-tab-name">{!reserve && job.tabShort ? job.tabShort : job.tab}</span>
-            <span className="job-tab-years">{job.years}</span>
+            <span className="job-tab-years">
+              <span className="job-years-long">{job.years}</span>
+              {/* The narrowest phones: "2021–26" (see .job-years-short in index.css). */}
+              <span className="job-years-short" aria-hidden="true">
+                {shortYears(job.years)}
+              </span>
+            </span>
           </button>
         ))}
       </div>
@@ -256,6 +262,9 @@ function WorkTabs({ reserve = true }: { reserve?: boolean }) {
     </div>
   )
 }
+
+/** "2021 to 2026" as "2021–26", "2013 to now" as "2013–now": for tabs on the narrowest phones. */
+const shortYears = (years: string) => years.replace(/^(\d{4}) to (?:\d{2}(\d{2})|(\w+))$/, (_, a, b, c) => `${a}–${b ?? c}`)
 
 function JobEntry({ job }: { job: Job }) {
   return (
