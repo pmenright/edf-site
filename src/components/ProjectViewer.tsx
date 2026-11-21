@@ -1,5 +1,5 @@
 import { AnimatePresence, animate, motion, useMotionValue, useReducedMotion, type Transition } from 'motion/react'
-import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent, type PointerEvent, type ReactNode, type RefObject } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent, type ReactNode, type RefObject } from 'react'
 import LiteYouTubeEmbed from 'react-lite-youtube-embed'
 import closeX from '../assets/brand/close-x.svg'
 import { getAsset, type DocumentMedia, type ImageMedia, type MediaAsset, type Project, type YouTubeMedia, withBase } from '../content'
@@ -21,9 +21,6 @@ const UP_KEYS = new Set(['ArrowUp', 'PageUp'])
 
 interface ViewerProps {
   project: Project
-  /** Whether the description is open (App.tsx closes it again whenever the viewer closes). */
-  descriptionOpen: boolean
-  onDescriptionOpen: (open: boolean) => void
   onClose: () => void
 }
 
@@ -32,7 +29,7 @@ interface ViewerProps {
  * Native <dialog>: Esc, focus handling and screen-reader semantics come built in.
  * Opens with the artwork sliding up, the backdrop dimming and the buttons sliding in from the right.
  */
-export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onClose }: ViewerProps) {
+export function ProjectViewer({ project, onClose }: ViewerProps) {
   const dialog = useRef<HTMLDialogElement>(null)
   const heading = useRef<HTMLHeadingElement>(null)
   const reduce = useReducedMotion()
@@ -41,6 +38,8 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
   const [barH, setBarH] = useState(0)
   const [sheetH, setSheetH] = useState(0)
   const [leaving, setLeaving] = useState(false)
+  // The description starts closed every time the viewer opens (each opening is a new viewer).
+  const [descriptionOpen, onDescriptionOpen] = useState(false)
   const [showAlternate, setShowAlternate] = useState(false)
   const [downloadOpen, setDownloadOpen] = useState(false)
   const documentScroller = useRef<HTMLDivElement>(null)
@@ -152,6 +151,7 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
   }, [downloadOpen])
 
   const showView = (alt: boolean) => {
+    setZoomScale(1)
     setShowAlternate(alt)
     setDeckScrolled(false)
     window.clearTimeout(hintTimer.current)
@@ -269,6 +269,32 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
 
   const toggleDescription = () => onDescriptionOpen(!showDescription)
 
+  // + / fit / - (touch screens): drive whichever view is showing (the one leaving in a swap lets go).
+  const touch = useMediaQuery('(pointer: coarse)')
+  const zoomControls = useRef<ZoomControls | null>(null)
+  const [zoomScale, setZoomScale] = useState(1)
+  const zoomLink = useMemo<ZoomLink>(
+    () => ({
+      register: (c) => {
+        zoomControls.current = c
+      },
+      unregister: (c) => {
+        if (zoomControls.current === c) zoomControls.current = null
+      },
+      onScale: setZoomScale,
+    }),
+    [],
+  )
+  const zoomable = touch && (shown.type === 'image' || shown.type === 'document')
+  const zoomTools = zoomable ? (
+    <ZoomButtons
+      scale={zoomScale}
+      onIn={() => zoomControls.current?.zoomBy(ZOOM_STEP)}
+      onFit={() => zoomControls.current?.reset()}
+      onOut={() => zoomControls.current?.zoomBy(1 / ZOOM_STEP)}
+    />
+  ) : null
+
 
   return (
     <dialog
@@ -349,9 +375,16 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
                 transition={swap}
               >
                 {alternate.media.type === 'image' ? (
-                  <ImageStage media={alternate.media} preloaded={isMediaReady(alternate.media)} onClose={close} />
+                  <ImageStage media={alternate.media} preloaded={isMediaReady(alternate.media)} onClose={close} zoomLink={zoomLink} />
                 ) : alternate.media.type === 'document' ? (
-                  <DocumentStage media={alternate.media} onClose={close} scroller={documentScroller} onScroll={onDeckScroll} clearTop={!portrait} />
+                  <DocumentStage
+                    media={alternate.media}
+                    onClose={close}
+                    scroller={documentScroller}
+                    onScroll={onDeckScroll}
+                    clearTop={!portrait}
+                    zoomLink={zoomLink}
+                  />
                 ) : (
                   <VideoStage media={alternate.media} onBackdrop={close} />
                 )}
@@ -366,9 +399,16 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
                 transition={swap}
               >
                 {media.type === 'image' ? (
-                  <ImageStage media={media} preloaded={isReady(project)} onClose={close} />
+                  <ImageStage media={media} preloaded={isReady(project)} onClose={close} zoomLink={zoomLink} />
                 ) : media.type === 'document' ? (
-                  <DocumentStage media={media} onClose={close} scroller={documentScroller} onScroll={onDeckScroll} clearTop={!portrait} />
+                  <DocumentStage
+                    media={media}
+                    onClose={close}
+                    scroller={documentScroller}
+                    onScroll={onDeckScroll}
+                    clearTop={!portrait}
+                    zoomLink={zoomLink}
+                  />
                 ) : (
                   <VideoStage media={media} onBackdrop={close} />
                 )}
@@ -389,7 +429,7 @@ export function ProjectViewer({ project, descriptionOpen, onDescriptionOpen, onC
           animate={{ bottom: drawer, right: stageRight }}
           transition={sheetMotion}
         >
-          <CaptionBar project={project} onHeight={setBarH}>
+          <CaptionBar project={project} onHeight={setBarH} tools={zoomTools}>
             {hasDescription && (
               <button
                 type="button"
@@ -673,13 +713,24 @@ function usePortraitLayout(stage: RefObject<HTMLDivElement | null>, wide: MediaA
   return portrait
 }
 
-function ImageStage({ media: board, preloaded, onClose }: { media: ImageMedia; preloaded: boolean; onClose: () => void }) {
+function ImageStage({
+  media: board,
+  preloaded,
+  onClose,
+  zoomLink,
+}: {
+  media: ImageMedia
+  preloaded: boolean
+  onClose: () => void
+  /** Set while this is the view showing: the + / fit / - buttons drive its zoom. */
+  zoomLink?: ZoomLink
+}) {
   // Decided once, when the viewer opens.
   const [instant] = useState(preloaded)
   const [loaded, setLoaded] = useState(preloaded)
   const stage = useRef<HTMLDivElement>(null)
   const layer = useRef<HTMLDivElement>(null)
-  const zoom = usePinchZoom(stage, layer)
+  const zoom = usePinchZoom(stage, layer, zoomLink)
   // Zoomed in, a tap doesn't close (it's easy to brush the artwork while looking around it).
   const clickToClose = useClickToClose(onClose, zoom.isZoomed)
   // The board as shown: its wide layout, or its portrait layout on a tall screen (see above).
@@ -760,8 +811,13 @@ const ZOOM_SETTLE = 'transform 0.25s cubic-bezier(0.22, 1, 0.36, 1)'
  * back. `frame` gets data-zoomed while zoomed in (the viewer's swipe-to-swap and click-to-close
  * stand down then).
  */
-function usePinchZoom(frame: RefObject<HTMLElement | null>, layer: RefObject<HTMLElement | null>) {
+function usePinchZoom(frame: RefObject<HTMLElement | null>, layer: RefObject<HTMLElement | null>, zoom?: ZoomLink) {
   const zoomed = useRef(false)
+  const api = useRef<ZoomControls | null>(null)
+  const report = useRef(zoom?.onScale)
+  useLayoutEffect(() => {
+    report.current = zoom?.onScale
+  })
   useEffect(() => {
     const el = frame.current
     const content = layer.current
@@ -774,6 +830,7 @@ function usePinchZoom(frame: RefObject<HTMLElement | null>, layer: RefObject<HTM
       content.style.transform = s === 1 ? '' : `translate3d(${tx}px, ${ty}px, 0) scale(${s})`
       zoomed.current = s > 1.001
       el.toggleAttribute('data-zoomed', zoomed.current)
+      report.current?.(s)
     }
     // Keep the zoomed artwork covering its box: no dragging it off past an edge.
     const clampPan = () => {
@@ -799,6 +856,22 @@ function usePinchZoom(frame: RefObject<HTMLElement | null>, layer: RefObject<HTM
     const local = (cx: number, cy: number) => {
       const r = el.getBoundingClientRect()
       return [cx - r.left, cy - r.top] as const
+    }
+    // The + / fit / - buttons: step around the middle of what's on screen, or back to the whole board.
+    api.current = {
+      zoomBy: (f) => {
+        zoomAt(el.clientWidth / 2, el.clientHeight / 2, s * f)
+        if (s < 1.05) {
+          s = 1
+          tx = ty = 0
+        } else clampPan()
+        apply(true)
+      },
+      reset: () => {
+        s = 1
+        tx = ty = 0
+        apply(true)
+      },
     }
 
     // Touch: two fingers zoom (and move with the fingers); zoomed in, one finger pans.
@@ -936,9 +1009,39 @@ function usePinchZoom(frame: RefObject<HTMLElement | null>, layer: RefObject<HTM
       el.removeEventListener('pointermove', onPointerMove)
       el.removeEventListener('pointerup', onPointerUp)
       el.removeEventListener('pointercancel', onPointerUp)
+      api.current = null
     }
   }, [frame, layer])
+  useZoomControls(api, zoom)
   return { isZoomed: () => zoomed.current }
+}
+
+/** What the viewer's + / fit / - buttons call on the artwork that's showing. */
+interface ZoomControls {
+  /** Zoom in (f > 1) or out (f < 1) around the middle of the view. */
+  zoomBy: (f: number) => void
+  /** Back to the whole thing, fitted to the screen. */
+  reset: () => void
+}
+
+/** Wiring between a stage's zoom and the viewer's buttons: the stage hands over its controls and reports its scale. */
+interface ZoomLink {
+  register: (c: ZoomControls) => void
+  unregister: (c: ZoomControls) => void
+  onScale: (s: number) => void
+}
+
+/** Hands a stage's zoom to the buttons while that stage is the one showing. */
+function useZoomControls(api: RefObject<ZoomControls | null>, link?: ZoomLink) {
+  useEffect(() => {
+    if (!link) return
+    const mine: ZoomControls = {
+      zoomBy: (f) => api.current?.zoomBy(f),
+      reset: () => api.current?.reset(),
+    }
+    link.register(mine)
+    return () => link.unregister(mine)
+  }, [api, link])
 }
 
 /**
@@ -946,7 +1049,17 @@ function usePinchZoom(frame: RefObject<HTMLElement | null>, layer: RefObject<HTM
  * wider (up to ZOOM_MAX times), keeping the point between the fingers in place, and the pages then
  * scroll both ways on their own. Pinched back past their normal width, they settle at it.
  */
-function useDocumentZoom(scroller: RefObject<HTMLElement | null>, column: RefObject<HTMLElement | null>, baseWidth: string) {
+function useDocumentZoom(
+  scroller: RefObject<HTMLElement | null>,
+  column: RefObject<HTMLElement | null>,
+  baseWidth: string,
+  zoom?: ZoomLink,
+) {
+  const api = useRef<ZoomControls | null>(null)
+  const report = useRef(zoom?.onScale)
+  useLayoutEffect(() => {
+    report.current = zoom?.onScale
+  })
   useEffect(() => {
     const box = scroller.current
     const col = column.current
@@ -966,6 +1079,15 @@ function useDocumentZoom(scroller: RefObject<HTMLElement | null>, column: RefObj
       const after = col.getBoundingClientRect()
       box.scrollLeft += after.left + fx * after.width - (r.left + x)
       box.scrollTop += after.top + fy * after.height - (r.top + y)
+      report.current?.(z)
+    }
+    // The + / fit / - buttons: around the middle of what's on screen.
+    api.current = {
+      zoomBy: (f) => {
+        const next = z * f
+        setZoom(next < 1.05 ? 1 : next, box.clientWidth / 2, box.clientHeight / 2)
+      },
+      reset: () => setZoom(1, box.clientWidth / 2, box.clientHeight / 2),
     }
     const local = (cx: number, cy: number) => {
       const r = box.getBoundingClientRect()
@@ -1028,8 +1150,10 @@ function useDocumentZoom(scroller: RefObject<HTMLElement | null>, column: RefObj
       box.removeEventListener('wheel', onWheel)
       box.removeEventListener('gesturestart', onGestureStart)
       box.removeEventListener('gesturechange', onGestureChange)
+      api.current = null
     }
   }, [scroller, column, baseWidth])
+  useZoomControls(api, zoom)
 }
 
 /**
@@ -1044,6 +1168,7 @@ function DocumentStage({
   scroller,
   onScroll,
   clearTop,
+  zoomLink,
 }: {
   media: DocumentMedia
   onClose: () => void
@@ -1051,6 +1176,8 @@ function DocumentStage({
   onScroll: () => void
   /** Start the pages below the close button (when the stage itself reaches the top of the screen). */
   clearTop: boolean
+  /** Set while this is the view showing: the + / fit / - buttons drive its zoom. */
+  zoomLink?: ZoomLink
 }) {
   const clickToClose = useClickToClose(onClose)
   const first = getAsset(media.pages[0])
@@ -1058,7 +1185,7 @@ function DocumentStage({
   const width = aspect >= 1 ? `min(90cqw, (100cqh - 120px) * ${aspect})` : 'min(90cqw, 1000px)'
   const n = media.pages.length
   const column = useRef<HTMLDivElement>(null)
-  useDocumentZoom(scroller, column, width)
+  useDocumentZoom(scroller, column, width, zoomLink)
   return (
     <div
       ref={scroller}
@@ -1152,6 +1279,41 @@ function VideoStage({ media, onBackdrop }: { media: YouTubeMedia; onBackdrop: ()
   )
 }
 
+/** Each + or - is this much closer or further. */
+const ZOOM_STEP = 1.6
+
+/**
+ * Touch screens: [ + ] [ fit ] [ - ] for the artwork, so people find out it zooms (pinching works
+ * too). Fit puts it back to the whole board. - and fit sit dimmed while it's already fitted, + at
+ * the most it zooms.
+ */
+function ZoomButtons({ scale, onIn, onFit, onOut }: { scale: number; onIn: () => void; onFit: () => void; onOut: () => void }) {
+  const fitted = scale <= 1.001
+  const button =
+    'grid size-11 cursor-pointer place-items-center border-2 border-sand bg-ink text-sand outline-none transition-colors active:bg-sand active:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sand disabled:cursor-default disabled:opacity-35 disabled:active:bg-ink disabled:active:text-sand'
+  return (
+    <div role="group" aria-label="Zoom" className="flex gap-1.5">
+      <button type="button" aria-label="Zoom in" onClick={onIn} disabled={scale >= ZOOM_MAX - 0.01} className={button}>
+        <svg aria-hidden="true" viewBox="0 0 20 20" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path d="M10 3v14M3 10h14" />
+        </svg>
+      </button>
+      <button type="button" aria-label="Fit to screen" onClick={onFit} disabled={fitted} className={button}>
+        {/* Corner brackets around a page: fit the whole thing on screen. */}
+        <svg aria-hidden="true" viewBox="0 0 20 20" className="size-[20px]" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M2 7V2h5M13 2h5v5M18 13v5h-5M7 18H2v-5" />
+          <rect x="6.5" y="6.5" width="7" height="7" />
+        </svg>
+      </button>
+      <button type="button" aria-label="Zoom out" onClick={onOut} disabled={fitted} className={button}>
+        <svg aria-hidden="true" viewBox="0 0 20 20" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path d="M3 10h14" />
+        </svg>
+      </button>
+    </div>
+  )
+}
+
 /** What the caption bar says under the title: a design's discipline, or that it's a video. */
 const subtitle = (p: Project) => p.discipline ?? (p.category === 'video' ? 'Video' : '')
 
@@ -1160,7 +1322,18 @@ const subtitle = (p: Project) => p.discipline ?? (p.category === 'video' ? 'Vide
  * there's room; on phones the name sits above a full-width row of buttons, within thumb's reach.
  * Reports its height so the artwork can fit above it.
  */
-function CaptionBar({ project, onHeight, children }: { project: Project; onHeight: (h: number) => void; children: ReactNode }) {
+function CaptionBar({
+  project,
+  onHeight,
+  tools,
+  children,
+}: {
+  project: Project
+  onHeight: (h: number) => void
+  /** The + / fit / - buttons: beside the title on phones, after the other buttons on wider screens. */
+  tools?: ReactNode
+  children: ReactNode
+}) {
   const ref = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
     const el = ref.current!
@@ -1176,11 +1349,15 @@ function CaptionBar({ project, onHeight, children }: { project: Project; onHeigh
       ref={ref}
       className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))] font-ddc text-sand sm:px-6 md:pb-5 short:pt-2 short:pb-2"
     >
-      <div className="min-w-0 text-center max-sm:w-full sm:text-left">
-        <p className="truncate text-[18px] leading-tight sm:text-[20px] wide:text-[24px]">{project.title}</p>
-        {sub && <p className="mt-0.5 truncate text-[12px] leading-tight tracking-[0.08em] uppercase opacity-70 wide:text-[14px]">{sub}</p>}
+      <div className="flex min-w-0 items-center gap-3 max-sm:w-full">
+        <div className={`min-w-0 flex-1 sm:text-left ${tools ? 'text-left' : 'text-center'}`}>
+          <p className="truncate text-[18px] leading-tight sm:text-[20px] wide:text-[24px]">{project.title}</p>
+          {sub && <p className="mt-0.5 truncate text-[12px] leading-tight tracking-[0.08em] uppercase opacity-70 wide:text-[14px]">{sub}</p>}
+        </div>
+        {tools && <div className="flex-none sm:hidden">{tools}</div>}
       </div>
       {children && <div className="flex gap-2 max-sm:w-full sm:gap-3">{children}</div>}
+      {tools && <div className="flex-none max-sm:hidden">{tools}</div>}
     </div>
   )
 }

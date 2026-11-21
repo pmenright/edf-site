@@ -36,7 +36,9 @@ export function AboutRow({ open, slideW, shift, appear, rowRef, onNext }: RowPro
   const enter = useMotionValue(open && !appear ? 0 : slideW)
   const x = useTransform(() => shift.get() + enter.get())
   const width = useRef(slideW)
-  width.current = slideW
+  useLayoutEffect(() => {
+    width.current = slideW
+  })
   useLayoutEffect(() => {
     const a = animate(enter, open ? 0 : width.current, { duration: reduce ? 0 : ABOUT_SLIDE_DURATION, ease: SLIDE_EASE })
     return () => a.stop()

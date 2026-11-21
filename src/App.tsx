@@ -45,7 +45,6 @@ export default function App() {
     url.searchParams.delete('panel')
     window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash)
   }, [])
-  const [descriptionOpen, setDescriptionOpen] = useState(false)
 
   // Give the full-size image a moment to arrive so the lightbox slides up with it in place.
   // If it takes longer than this, the lightbox opens anyway with a blurred preview.
@@ -61,11 +60,6 @@ export default function App() {
     [openProject],
   )
   useEffect(() => onShowProject(handleOpen), [handleOpen])
-
-  // The description starts closed every time the lightbox opens.
-  useEffect(() => {
-    if (!open) setDescriptionOpen(false)
-  }, [open])
 
   // DESIGN / VIDEO: also closes the about / resume panel if it's open.
   const showCategory = useCallback(
@@ -96,8 +90,6 @@ export default function App() {
         <ProjectViewer
           key={open.id}
           project={open}
-          descriptionOpen={descriptionOpen}
-          onDescriptionOpen={setDescriptionOpen}
           onClose={closeProject}
         />
       )}
