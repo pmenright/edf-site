@@ -1405,7 +1405,8 @@ const ZOOM_STEP = 1.6
 
 /**
  * Touch screens: zoom, in the top left corner level with the close button and drawn like it (a sand
- * disc with a navy mark). The magnifying lens opens out into + / fit / - beside it, so people find
+ * disc with a dark mark). The magnifying lens opens out into + / fit / - beside it (sand marks in a
+ * slate pill, the hero's ink, set into the sand one, Jim's mockup), so people find
  * out the artwork zooms (pinching works too); the lens closes them again. They open sideways along
  * the strip above the artwork, or, on a phone turned sideways (no strip above the artwork there),
  * downward along the free margin at the left, so they never cover the artwork. Fit puts it back to
@@ -1438,12 +1439,22 @@ function ZoomCorner({
   // The disc matches the close button's: 25px on phones, 28px from 480px wide (sm).
   const disc = useMediaQuery('(min-width: 480px)') ? 28 : 25
   const slot =
-    'relative grid size-11 flex-none cursor-pointer place-items-center text-[#1b2747] outline-none disabled:cursor-default'
+    'relative grid size-11 flex-none cursor-pointer place-items-center text-ink outline-none disabled:cursor-default'
   const mark = 'transition-transform duration-200 ease-in-out group-hover:scale-130 group-disabled:scale-100'
-  const extra = `${slot} group disabled:opacity-35`
+  const extra = `${slot} group text-sand disabled:opacity-35 focus-visible:[&>svg]:outline-2 focus-visible:[&>svg]:outline-offset-4 focus-visible:[&>svg]:outline-sand`
   // The sand behind the buttons: the lens's disc, which stretches into a pill when it opens (three
   // more 44px slots).
   const length = open ? disc + 132 : disc
+  // Jim's mockup (2026-11-22): + / fit / - sit in a pill of the page's slate (ink, the hero's
+  // background) set into the sand one, a sand margin
+  // all around it, centered on fit (the middle slot, 110px along) and reaching to 3px from the sand
+  // pill's far end.
+  const margin = 3
+  const navyHalf = 44 + disc / 2 - margin
+  const navyStart = 110 - navyHalf
+  const navyCross = (44 - disc) / 2 + margin
+  const navyWidth = disc - 2 * margin
+  const navyLength = open ? navyHalf * 2 : 0
   return (
     <div
       role="group"
@@ -1460,6 +1471,14 @@ function ZoomCorner({
         animate={down ? { width: disc, height: length } : { width: length, height: disc }}
         transition={{ duration: reduce ? 0 : 0.25, ease: SWAP_EASE }}
       />
+      <motion.span
+        aria-hidden="true"
+        className="absolute rounded-full bg-ink"
+        style={down ? { top: navyStart, left: navyCross, width: navyWidth } : { left: navyStart, top: navyCross, height: navyWidth }}
+        initial={false}
+        animate={{ ...(down ? { height: navyLength } : { width: navyLength }), opacity: open ? 1 : 0 }}
+        transition={{ duration: reduce ? 0 : 0.25, ease: SWAP_EASE, delay: open && !reduce ? 0.04 : 0 }}
+      />
       <div className={`relative flex ${down ? 'flex-col' : 'flex-row'}`}>
         <button
           type="button"
@@ -1471,7 +1490,7 @@ function ZoomCorner({
         >
           {/* a magnifying lens: the glass and its handle */}
           <span className={`grid size-[25px] place-items-center rounded-full sm:size-[28px] ${mark}`}>
-            <svg aria-hidden="true" viewBox="0 0 20 20" className="size-[15px] sm:size-[17px]" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round">
+            <svg aria-hidden="true" viewBox="0 0 20 20" className="size-[14px] sm:size-[16px]" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round">
               <circle cx="8.5" cy="8.5" r="5.5" />
               <path d="m12.6 12.6 5 5" />
             </svg>
@@ -1484,19 +1503,19 @@ function ZoomCorner({
           inert={!open}
         >
           <button type="button" aria-label="Zoom in" onClick={onIn} disabled={scale >= ZOOM_MAX - 0.01} className={extra}>
-            <svg aria-hidden="true" viewBox="0 0 20 20" className={`size-[14px] sm:size-[16px] ${mark}`} fill="none" stroke="currentColor" strokeWidth="2.8">
+            <svg aria-hidden="true" viewBox="0 0 20 20" className={`size-[12px] sm:size-[13px] ${mark}`} fill="none" stroke="currentColor" strokeWidth="3">
               <path d="M10 3v14M3 10h14" />
             </svg>
           </button>
           <button type="button" aria-label="Fit to screen" onClick={onFit} disabled={fitted} className={extra}>
             {/* Corner brackets around a page: fit the whole thing on screen. */}
-            <svg aria-hidden="true" viewBox="0 0 20 20" className={`size-[15px] sm:size-[17px] ${mark}`} fill="none" stroke="currentColor" strokeWidth="2.2">
+            <svg aria-hidden="true" viewBox="0 0 20 20" className={`size-[13px] sm:size-[14px] ${mark}`} fill="none" stroke="currentColor" strokeWidth="2.4">
               <path d="M2 7V2h5M13 2h5v5M18 13v5h-5M7 18H2v-5" />
               <rect x="6.5" y="6.5" width="7" height="7" />
             </svg>
           </button>
           <button type="button" aria-label="Zoom out" onClick={onOut} disabled={fitted} className={extra}>
-            <svg aria-hidden="true" viewBox="0 0 20 20" className={`size-[14px] sm:size-[16px] ${mark}`} fill="none" stroke="currentColor" strokeWidth="2.8">
+            <svg aria-hidden="true" viewBox="0 0 20 20" className={`size-[12px] sm:size-[13px] ${mark}`} fill="none" stroke="currentColor" strokeWidth="3">
               <path d="M3 10h14" />
             </svg>
           </button>
