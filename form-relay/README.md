@@ -49,7 +49,7 @@ npx wrangler deploy
 
 - `login` opens the browser to approve Wrangler (Cloudflare's command-line tool).
 - `secret put TURNSTILE_SECRET` asks for the Turnstile **Secret Key**: paste it.
-- `secret put MAIL_TO` asks for the address messages go to: your verified Gmail.
+- `secret put MAIL_TO` asks for the address messages go to: your verified Gmail, spelled exactly as it shows under Email Routing, Destination addresses (Cloudflare refuses any other address, and the forms fail with "relay said 502"). Spaces around it are ignored.
 - `deploy` may ask you to pick a workers.dev name, then prints the relay's address, like
   `https://edf-forms.yourname.workers.dev`.
 

@@ -56,7 +56,10 @@ export default {
     }
     if (request.method !== 'POST') return reply(405, { ok: false, error: 'method' })
     if (!okOrigin) return reply(403, { ok: false, error: 'origin' })
-    if (!env.TURNSTILE_SECRET || !env.FROM_ADDRESS || !env.MAIL_TO || !env.EMAIL) {
+    // Where messages go: the MAIL_TO secret, with any stray spaces or line breaks from pasting it in
+    // taken off (Cloudflare refuses an address that isn't exactly a verified one).
+    const mailTo = String(env.MAIL_TO || '').trim()
+    if (!env.TURNSTILE_SECRET || !env.FROM_ADDRESS || !mailTo || !env.EMAIL) {
       console.error('form relay is not configured')
       return reply(500, { ok: false, error: 'not-configured' })
     }
@@ -95,7 +98,7 @@ export default {
 
     const message = {
       from: { email: env.FROM_ADDRESS, name: env.FROM_NAME || 'Website form' },
-      to: env.MAIL_TO, // a secret (npx wrangler secret put MAIL_TO), so the address isn't in the repo
+      to: mailTo, // a secret (npx wrangler secret put MAIL_TO), so the address isn't in the repo
       subject: clip(`${formName}: message${name ? ` from ${name}` : ''}`, 150),
       text,
     }
@@ -104,9 +107,11 @@ export default {
     try {
       await env.EMAIL.send(message)
     } catch (e) {
-      // The error code only: never the message itself.
-      console.error('send failed', (e && e.code) || (e && e.name) || 'unknown')
-      return reply(502, { ok: false, error: 'send' })
+      // Cloudflare's error code only (like E_RECIPIENT_NOT_ALLOWED): never the message itself. It's
+      // logged, and sent back so the site's dev preview can show why a send failed.
+      const code = String((e && e.code) || (e && e.name) || 'unknown').replace(/[^A-Za-z0-9_.-]/g, '').slice(0, 60)
+      console.error('send failed', code)
+      return reply(502, { ok: false, error: 'send', code })
     }
     return reply(200, { ok: true })
   },

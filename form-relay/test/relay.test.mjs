@@ -193,11 +193,26 @@ test('unsupported body type is refused', async () => {
   assert.equal(r.status, 400)
 })
 
-test('send failure: 502, and only the error code is logged', async () => {
+test('MAIL_TO with stray spaces or a line break still sends to the address', async () => {
+  const r = await worker.fetch(post(good), env({ MAIL_TO: '  owner@example.com\n' }))
+  assert.equal(r.status, 200)
+  assert.equal(sent[0].to, 'owner@example.com')
+})
+
+test('MAIL_TO that is only spaces: not configured', async () => {
+  const r = await worker.fetch(post(good), env({ MAIL_TO: '   ' }))
+  assert.equal(r.status, 500)
+  assert.equal(sent.length, 0)
+})
+
+test('send failure: 502 with Cloudflare\'s code (never the message) in the answer and the log', async () => {
   const e = env({ EMAIL: { send: async () => { const err = new Error('nope: Ada Lovelace said Hello'); err.code = 'E_DELIVERY_FAILED'; throw err } } })
   const r = await worker.fetch(post(good), e)
   assert.equal(r.status, 502)
   assert.deepEqual(errors, ['send failed E_DELIVERY_FAILED'])
+  const body = await r.json()
+  assert.deepEqual(body, { ok: false, error: 'send', code: 'E_DELIVERY_FAILED' })
+  assert.doesNotMatch(JSON.stringify(body), /Ada|Hello/)
 })
 
 test('missing configuration: 500, nothing sent', async () => {

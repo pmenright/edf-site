@@ -57,8 +57,9 @@ export function ContactForm() {
         throw new SendError(`could not reach the relay (${err instanceof Error ? err.message : 'network'})`)
       })
       if (!res.ok) {
-        const answer = (await res.json().catch(() => ({}))) as { error?: string }
-        throw new SendError(`relay said ${res.status}${answer.error ? ` (${answer.error})` : ''}`)
+        const answer = (await res.json().catch(() => ({}))) as { error?: string; code?: string }
+        const why = [answer.error, answer.code].filter(Boolean).join(', ')
+        throw new SendError(`relay said ${res.status}${why ? ` (${why})` : ''}`)
       }
       form.current?.reset()
       setStatus('sent')
