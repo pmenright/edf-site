@@ -12,8 +12,10 @@ interface PopupProps {
   describedBy?: string
   /** What gets focus when it opens. */
   initialFocus: RefObject<HTMLElement | null>
-  /** Sizes and pads the box. */
+  /** Sizes the box (its max width). */
   panelClassName: string
+  /** Pads its contents (the layer that scrolls, if anything has to). */
+  bodyClassName: string
   onClose: () => void
   /** The box's contents. `close` plays the closing animation, then calls onClose. */
   children: (close: () => void) => ReactNode
@@ -25,10 +27,13 @@ interface PopupProps {
  * come built in; Esc, the close button or a click outside the box closes it. The backdrop fades and
  * the box rises in (.popup-* in index.css); closing plays that in reverse. While it's open the page
  * behind doesn't scroll.
+ *
+ * The box is two layers: the outline with the close button pinned in its corner, and inside it the
+ * contents, the only part that can scroll (on screens too short for them), so the X never moves.
  */
-export function Popup({ labelledBy, describedBy, initialFocus, panelClassName, onClose, children }: PopupProps) {
+export function Popup({ labelledBy, describedBy, initialFocus, panelClassName, bodyClassName, onClose, children }: PopupProps) {
   const dialog = useRef<HTMLDialogElement>(null)
-  const panel = useRef<HTMLDivElement>(null)
+  const body = useRef<HTMLDivElement>(null)
   const [leaving, setLeaving] = useState(false)
 
   useEffect(() => {
@@ -41,7 +46,7 @@ export function Popup({ labelledBy, describedBy, initialFocus, panelClassName, o
     // the box itself has something to scroll (only on very short screens).
     const release = holdPage()
     const onWheel = (e: WheelEvent) => {
-      const box = panel.current
+      const box = body.current
       if (box && box.contains(e.target as Node) && box.scrollHeight > box.clientHeight) return
       // A message box with more text than it shows scrolls itself.
       const field = (e.target as HTMLElement).closest?.('textarea')
@@ -95,7 +100,7 @@ export function Popup({ labelledBy, describedBy, initialFocus, panelClassName, o
         if (!SCROLL_KEYS.has(e.key)) return
         if (target.closest('input, textarea, select, [contenteditable="true"]')) return // typing, and moving the caret
         if (e.key === ' ' && target.closest('button, a')) return // space still presses buttons
-        if (panel.current && panel.current.scrollHeight > panel.current.clientHeight) return
+        if (body.current && body.current.scrollHeight > body.current.clientHeight) return
         e.preventDefault()
       }}
     >
@@ -107,12 +112,11 @@ export function Popup({ labelledBy, describedBy, initialFocus, panelClassName, o
           if (e.target === e.currentTarget && leaving) finishClose()
         }}
       />
-      <div
-        ref={panel}
-        className={`popup-panel relative w-full border-2 border-sand bg-ink text-center text-sand ${panelClassName}`}
-        data-leaving={leaving || undefined}
-      >
-        {children(close)}
+      <div className={`popup-panel relative w-full border-2 border-sand bg-ink text-center text-sand ${panelClassName}`} data-leaving={leaving || undefined}>
+        <div ref={body} className={`popup-body ${bodyClassName}`}>
+          {children(close)}
+        </div>
+        {/* Outside the scrolling layer, so it stays in the corner. */}
         <button
           type="button"
           onClick={close}

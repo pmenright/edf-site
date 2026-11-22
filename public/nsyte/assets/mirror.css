@@ -520,6 +520,18 @@
 .mirror-contact__links .mirror-footer-link.heading-6:focus-visible {
   transform: scale(1.05);
 }
+/* Wider than phones: Design above Video, left-aligned with each other, the pair centered under
+   the logo (Jim's mockup, 2026-11-22). The rule over them keeps the width it had when the two sat
+   side by side: 8.81em, measured in Chrome, Firefox and Safari's engine at every width. */
+@media screen and (min-width: 768px) {
+  .mirror-contact__links.text-block-2 {
+    display: grid;
+    justify-content: center;
+    justify-items: start;
+    gap: 0.9em 0;
+    width: 8.81em;
+  }
+}
 /* Phones and small tablets (the footer stacks at 767px): Jim's logotype lockup instead of the
    anvil logo, centered, in the page's green (his file, shown through a mask in that color; the file
    itself is untouched). Under it Design and Video in the page's near-black, then the bar. The links

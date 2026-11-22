@@ -23,7 +23,7 @@ interface ResumeDialogProps {
 export function ResumeDialog({ onClose, onView }: ResumeDialogProps) {
   const download = useRef<HTMLAnchorElement>(null)
   return (
-    <Popup labelledBy="resume-title" initialFocus={download} panelClassName="max-w-[520px] px-8 pt-12 pb-9" onClose={onClose}>
+    <Popup labelledBy="resume-title" initialFocus={download} panelClassName="max-w-[520px]" bodyClassName="px-8 pt-12 pb-9" onClose={onClose}>
       {(close) => (
         <>
           <h2 id="resume-title" className="text-[24px] leading-[1.3] text-balance">

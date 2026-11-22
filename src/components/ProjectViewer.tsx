@@ -34,6 +34,8 @@ export function ProjectViewer({ project, onClose }: ViewerProps) {
   const heading = useRef<HTMLHeadingElement>(null)
   const reduce = useReducedMotion()
   const portrait = useMediaQuery('(orientation: portrait)')
+  // Short screens: phones turned sideways (the `short` variant in index.css, max-height 500px).
+  const shortScreen = useMediaQuery('(max-height: 500px)')
   const sheetW = useSheetWidth()
   const [barH, setBarH] = useState(0)
   const [sheetH, setSheetH] = useState(0)
@@ -61,9 +63,13 @@ export function ProjectViewer({ project, onClose }: ViewerProps) {
   // below (and the sides, on screens lying on their side). Documents scroll the full height, with
   // their first page clear of the close button.
   const isDocument = (showAlternate && alternate ? alternate.media : media).type === 'document'
-  const inset = !isDocument && !portrait ? STAGE_INSET : 0
-  const stageTop = portrait ? TOP_BAND : isDocument ? 0 : TOP_BAND_WIDE
-  const stageBottom = barH + drawer + (isDocument ? 0 : STAGE_GAP)
+  // A phone turned sideways has little height to spare, so the artwork doesn't sit under a band
+  // for the close button: it uses the full height, centered, and keeps clear of the X (tucked into
+  // the corner) at both sides. With the description open the X sits over the description instead.
+  const sideways = !portrait && shortScreen
+  const inset = isDocument || portrait ? 0 : sideways && !side ? SIDEWAYS_CLEAR : STAGE_INSET
+  const stageTop = portrait ? TOP_BAND : isDocument ? 0 : sideways ? SIDEWAYS_TOP : TOP_BAND_WIDE
+  const stageBottom = barH + drawer + (isDocument ? 0 : sideways ? SIDEWAYS_GAP : STAGE_GAP)
   const stageRight = side ? sheetW : 0
   const sheetMotion: Transition = { duration: reduce ? 0 : 0.3, ease: SWAP_EASE }
 
@@ -204,8 +210,14 @@ export function ProjectViewer({ project, onClose }: ViewerProps) {
           s.locked = false
         }
         const t = e.target instanceof Element ? e.target : null
-        if (t?.closest('#project-description')) return
         const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? window.innerHeight : 1)
+        // The description scrolls itself, but a scroll it can't use (short text, or already at the
+        // end) stops there instead of moving the page behind the viewer.
+        const desc = t?.closest<HTMLElement>('#project-description')
+        if (desc) {
+          if (!canScroll(desc, dy)) e.preventDefault()
+          return
+        }
         const deck = t?.closest<HTMLElement>('[data-viewer-scroll]')
         if (deck) {
           // The pages scroll themselves. Only a fresh upward scroll at the very top pulls the design
@@ -231,8 +243,16 @@ export function ProjectViewer({ project, onClose }: ViewerProps) {
       touchMove: (e) => {
         if (e.touches.length > 1) return e.preventDefault() // two fingers: a pinch (the artwork handles it), never a swipe
         const t = e.target instanceof Element ? e.target : null
-        if (t?.closest('#project-description')) return
         const dy = s.touchY - e.touches[0].clientY // finger moving up = scrolling down
+        // The description scrolls itself, but never hands the scroll on to the page behind (phones
+        // used to scroll the gallery under the viewer): a swipe it can't use, because the text is
+        // short or already at its end, is held.
+        const desc = t?.closest<HTMLElement>('#project-description')
+        if (desc) {
+          if (!s.touchMode && dy !== 0) s.touchMode = canScroll(desc, dy) ? 'native' : 'held'
+          if (s.touchMode !== 'native') e.preventDefault()
+          return
+        }
         const deck = t?.closest<HTMLElement>('[data-viewer-scroll]')
         if (deck) {
           if (!s.touchMode) s.touchMode = dy < 0 && deck.scrollTop <= 0 ? 'pull' : 'native'
@@ -286,14 +306,8 @@ export function ProjectViewer({ project, onClose }: ViewerProps) {
     [],
   )
   const zoomable = touch && (shown.type === 'image' || shown.type === 'document')
-  const zoomTools = zoomable ? (
-    <ZoomButtons
-      scale={zoomScale}
-      onIn={() => zoomControls.current?.zoomBy(ZOOM_STEP)}
-      onFit={() => zoomControls.current?.reset()}
-      onOut={() => zoomControls.current?.zoomBy(1 / ZOOM_STEP)}
-    />
-  ) : null
+  // The magnifying lens in the top left corner opens + / fit / - (closed each time the viewer opens).
+  const [zoomOpen, setZoomOpen] = useState(false)
 
 
   return (
@@ -429,7 +443,7 @@ export function ProjectViewer({ project, onClose }: ViewerProps) {
           animate={{ bottom: drawer, right: stageRight }}
           transition={sheetMotion}
         >
-          <CaptionBar project={project} onHeight={setBarH} tools={zoomTools}>
+          <CaptionBar project={project} onHeight={setBarH}>
             {hasDescription && (
               <button
                 type="button"
@@ -496,7 +510,7 @@ export function ProjectViewer({ project, onClose }: ViewerProps) {
       </div>
 
       <div
-        className="viewer-controls absolute top-3 right-3 z-10 sm:top-6 sm:right-6"
+        className="viewer-controls absolute top-3 right-3 z-10 sm:top-6 sm:right-6 short:top-3 short:right-3"
         data-leaving={leaving || undefined}
         inert={downloadOpen}
       >
@@ -514,7 +528,25 @@ export function ProjectViewer({ project, onClose }: ViewerProps) {
         </button>
       </div>
 
-      <AnimatePresence>{showDeckHint && <ScrollHint reduce={!!reduce} bottom={barH + drawer + 20} right={stageRight} />}</AnimatePresence>
+      {zoomable && (
+        <ZoomCorner
+          open={zoomOpen}
+          onToggle={() => setZoomOpen(!zoomOpen)}
+          down={sideways}
+          leaving={leaving}
+          inert={downloadOpen}
+          scale={zoomScale}
+          onIn={() => zoomControls.current?.zoomBy(ZOOM_STEP)}
+          onFit={() => zoomControls.current?.reset()}
+          onOut={() => zoomControls.current?.zoomBy(1 / ZOOM_STEP)}
+        />
+      )}
+
+      <AnimatePresence>
+        {showDeckHint && barH > 0 && (
+          <ScrollHint reduce={!!reduce} bottom={barH + drawer + (shortScreen ? 12 : 20)} right={stageRight} transition={sheetMotion} />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {downloadOpen && project.link?.download && (
@@ -613,7 +645,7 @@ function DownloadPopup({
  * 44px tall for fingers, 40px with a mouse, and a little larger on very wide screens.
  */
 const BAR_BUTTON =
-  'inline-flex h-11 cursor-pointer items-center justify-center gap-2 border-2 border-sand px-4 font-ddc text-[15px] leading-none tracking-[0.08em] whitespace-nowrap uppercase outline-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sand pointer-fine:h-10 wide:h-12 wide:px-5 wide:text-[17px] max-sm:h-auto max-sm:min-h-11 max-sm:flex-1 max-sm:basis-0 max-sm:px-2.5 max-sm:py-1.5 max-sm:text-center max-sm:text-[13px] max-sm:leading-[1.2] max-sm:tracking-[0.05em] max-sm:whitespace-normal'
+  'inline-flex h-11 cursor-pointer items-center justify-center gap-2 border-2 border-sand px-4 font-ddc text-[15px] leading-none tracking-[0.08em] whitespace-nowrap uppercase outline-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sand pointer-fine:h-10 wide:h-12 wide:px-5 wide:text-[17px] max-sm:h-auto max-sm:min-h-11 max-sm:flex-1 max-sm:basis-0 max-sm:px-2.5 max-sm:py-1.5 max-sm:text-center max-sm:text-[13px] max-sm:leading-[1.2] max-sm:tracking-[0.05em] max-sm:whitespace-normal short:h-10 short:px-3 short:text-[13px]'
 /** Extras look like DESCRIPTION when it's closed, and fill in on hover. */
 const EXTRA_BUTTON = 'bg-ink text-sand hover:bg-sand hover:text-ink'
 
@@ -625,6 +657,12 @@ const TOP_BAND_WIDE = 80
 const STAGE_GAP = 20
 /** Space at the sides of a picture or video on screens lying on their side. */
 const STAGE_INSET = 24
+/** Phones turned sideways: the artwork starts this close to the top (the X is beside it, not above). */
+const SIDEWAYS_TOP = 12
+/** ...and keeps this far in from both sides, clear of the X in the corner (12px in, 44px wide). */
+const SIDEWAYS_CLEAR = 68
+/** ...and this far above the caption bar. */
+const SIDEWAYS_GAP = 12
 
 /** Width of the description sheet beside the artwork on screens lying on their side. */
 function useSheetWidth() {
@@ -1284,20 +1322,30 @@ function DocumentStage({
 
 /**
  * "Scroll down" hint for a document: the hero's scroll cue (the pill with the dropping ball, same
- * animations) in a circle of the hero's ink color with the buttons' sand outline, its arrow turned to point down. It slides up from the bottom a
- * moment after the pages arrive and slides back down once they're scrolled.
+ * animations) in a circle of the hero's ink color with the buttons' sand outline, its arrow turned
+ * to point down. It waits below the bottom edge of the screen, rises into place a moment after the
+ * pages arrive, and drops back off the bottom once they're scrolled. `bottom` is its resting place
+ * (above the caption bar); it starts that far down plus its own height, so it's always fully off
+ * the screen first, whatever the screen size.
  */
-function ScrollHint({ reduce, bottom, right }: { reduce: boolean; bottom: number; right: number }) {
+function ScrollHint({ reduce, bottom, right, transition }: { reduce: boolean; bottom: number; right: number; transition: Transition }) {
+  // Measured once it's there, so the start is below the edge on short screens too (it's smaller there).
+  const offscreen = bottom + HINT_SIZE + 24
   return (
     <motion.div
       aria-hidden="true"
-      style={{ bottom, right }}
-      className="pointer-events-none absolute left-0 z-10 mx-auto grid size-24 place-items-center rounded-full border-2 border-sand bg-ink shadow-[0_4px_16px_rgb(0_0_0/0.35)]"
-      initial={{ y: reduce ? 0 : 160, opacity: reduce ? 0 : 1 }}
-      animate={{ y: 0, opacity: 1, transition: { delay: 0.9, duration: reduce ? 0.2 : 0.5, ease: SWAP_EASE } }}
-      exit={{ y: reduce ? 0 : 160, opacity: reduce ? 0 : 1, transition: { duration: reduce ? 0.2 : 0.4, ease: [0.32, 0, 0.67, 0] } }}
+      style={{ right }}
+      className="pointer-events-none absolute left-0 z-10 mx-auto grid size-24 place-items-center rounded-full border-2 border-sand bg-ink shadow-[0_4px_16px_rgb(0_0_0/0.35)] short:size-[72px]"
+      initial={{ bottom, y: reduce ? 0 : offscreen, opacity: reduce ? 0 : 1 }}
+      animate={{
+        bottom,
+        y: 0,
+        opacity: 1,
+        transition: { bottom: transition, default: { delay: 0.9, duration: reduce ? 0.2 : 0.5, ease: SWAP_EASE } },
+      }}
+      exit={{ y: reduce ? 0 : offscreen, opacity: reduce ? 0 : 1, transition: { duration: reduce ? 0.2 : 0.4, ease: [0.32, 0, 0.67, 0] } }}
     >
-      <span className="relative block h-[50px] w-[57px]">
+      <span className="relative block h-[50px] w-[57px] short:scale-[0.75]">
         <span className="absolute top-0 left-0 flex h-[50px] w-5 flex-col items-start rounded-[20px] bg-sand">
           <span className="scroll-ball mt-0.5 ml-0.5 block size-4 rounded-[20px] bg-ink" />
         </span>
@@ -1308,6 +1356,15 @@ function ScrollHint({ reduce, bottom, right }: { reduce: boolean; bottom: number
       </span>
     </motion.div>
   )
+}
+/** The hint's size (size-24), the larger of its two sizes. */
+const HINT_SIZE = 96
+
+/** Whether `el` can scroll any further in the direction of `dy` (positive: down). */
+function canScroll(el: HTMLElement, dy: number) {
+  if (dy > 0) return el.scrollTop + el.clientHeight < el.scrollHeight - 1
+  if (dy < 0) return el.scrollTop > 0
+  return false
 }
 
 function scrollByKey(el: HTMLElement, key: string, shift: boolean, reduce: boolean) {
@@ -1347,33 +1404,104 @@ function VideoStage({ media, onBackdrop }: { media: YouTubeMedia; onBackdrop: ()
 const ZOOM_STEP = 1.6
 
 /**
- * Touch screens: [ + ] [ fit ] [ - ] for the artwork, so people find out it zooms (pinching works
- * too). Fit puts it back to the whole board. - and fit sit dimmed while it's already fitted, + at
- * the most it zooms.
+ * Touch screens: zoom, in the top left corner level with the close button and drawn like it (a sand
+ * disc with a navy mark). The magnifying lens opens out into + / fit / - beside it, so people find
+ * out the artwork zooms (pinching works too); the lens closes them again. They open sideways along
+ * the strip above the artwork, or, on a phone turned sideways (no strip above the artwork there),
+ * downward along the free margin at the left, so they never cover the artwork. Fit puts it back to
+ * the whole board; - and fit sit dimmed while it's already fitted, + at the most it zooms.
  */
-function ZoomButtons({ scale, onIn, onFit, onOut }: { scale: number; onIn: () => void; onFit: () => void; onOut: () => void }) {
+function ZoomCorner({
+  open,
+  onToggle,
+  down,
+  leaving,
+  inert,
+  scale,
+  onIn,
+  onFit,
+  onOut,
+}: {
+  open: boolean
+  onToggle: () => void
+  /** Open downward (phones turned sideways) instead of to the right. */
+  down: boolean
+  leaving: boolean
+  inert: boolean
+  scale: number
+  onIn: () => void
+  onFit: () => void
+  onOut: () => void
+}) {
   const fitted = scale <= 1.001
-  const button =
-    'grid size-11 cursor-pointer place-items-center border-2 border-sand bg-ink text-sand outline-none transition-colors active:bg-sand active:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sand disabled:cursor-default disabled:opacity-35 disabled:active:bg-ink disabled:active:text-sand'
+  const reduce = useReducedMotion()
+  // The disc matches the close button's: 25px on phones, 28px from 480px wide (sm).
+  const disc = useMediaQuery('(min-width: 480px)') ? 28 : 25
+  const slot =
+    'relative grid size-11 flex-none cursor-pointer place-items-center text-[#1b2747] outline-none disabled:cursor-default'
+  const mark = 'transition-transform duration-200 ease-in-out group-hover:scale-130 group-disabled:scale-100'
+  const extra = `${slot} group disabled:opacity-35`
+  // The sand behind the buttons: the lens's disc, which stretches into a pill when it opens (three
+  // more 44px slots).
+  const length = open ? disc + 132 : disc
   return (
-    <div role="group" aria-label="Zoom" className="flex gap-1.5">
-      <button type="button" aria-label="Zoom in" onClick={onIn} disabled={scale >= ZOOM_MAX - 0.01} className={button}>
-        <svg aria-hidden="true" viewBox="0 0 20 20" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="2.5">
-          <path d="M10 3v14M3 10h14" />
-        </svg>
-      </button>
-      <button type="button" aria-label="Fit to screen" onClick={onFit} disabled={fitted} className={button}>
-        {/* Corner brackets around a page: fit the whole thing on screen. */}
-        <svg aria-hidden="true" viewBox="0 0 20 20" className="size-[20px]" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M2 7V2h5M13 2h5v5M18 13v5h-5M7 18H2v-5" />
-          <rect x="6.5" y="6.5" width="7" height="7" />
-        </svg>
-      </button>
-      <button type="button" aria-label="Zoom out" onClick={onOut} disabled={fitted} className={button}>
-        <svg aria-hidden="true" viewBox="0 0 20 20" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="2.5">
-          <path d="M3 10h14" />
-        </svg>
-      </button>
+    <div
+      role="group"
+      aria-label="Zoom"
+      className="viewer-zoom absolute top-3 left-3 z-10 sm:top-6 sm:left-6 short:top-3 short:left-3"
+      data-leaving={leaving || undefined}
+      inert={inert}
+    >
+      <motion.span
+        aria-hidden="true"
+        className="absolute rounded-full bg-sand"
+        style={{ top: (44 - disc) / 2, left: (44 - disc) / 2 }}
+        initial={false}
+        animate={down ? { width: disc, height: length } : { width: length, height: disc }}
+        transition={{ duration: reduce ? 0 : 0.25, ease: SWAP_EASE }}
+      />
+      <div className={`relative flex ${down ? 'flex-col' : 'flex-row'}`}>
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={open}
+          aria-controls="viewer-zoom-tools"
+          aria-label={open ? 'Hide zoom' : 'Zoom'}
+          className={`${slot} group focus-visible:[&>span]:outline-2 focus-visible:[&>span]:outline-offset-4 focus-visible:[&>span]:outline-sand`}
+        >
+          {/* a magnifying lens: the glass and its handle */}
+          <span className={`grid size-[25px] place-items-center rounded-full sm:size-[28px] ${mark}`}>
+            <svg aria-hidden="true" viewBox="0 0 20 20" className="size-[15px] sm:size-[17px]" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round">
+              <circle cx="8.5" cy="8.5" r="5.5" />
+              <path d="m12.6 12.6 5 5" />
+            </svg>
+          </span>
+        </button>
+        {/* Hidden (and out of reach) while closed; they fade in as the pill opens. */}
+        <div
+          id="viewer-zoom-tools"
+          className={`flex transition-opacity duration-200 ${down ? 'flex-col' : 'flex-row'} ${open ? 'opacity-100 delay-75' : 'pointer-events-none opacity-0'}`}
+          inert={!open}
+        >
+          <button type="button" aria-label="Zoom in" onClick={onIn} disabled={scale >= ZOOM_MAX - 0.01} className={extra}>
+            <svg aria-hidden="true" viewBox="0 0 20 20" className={`size-[14px] sm:size-[16px] ${mark}`} fill="none" stroke="currentColor" strokeWidth="2.8">
+              <path d="M10 3v14M3 10h14" />
+            </svg>
+          </button>
+          <button type="button" aria-label="Fit to screen" onClick={onFit} disabled={fitted} className={extra}>
+            {/* Corner brackets around a page: fit the whole thing on screen. */}
+            <svg aria-hidden="true" viewBox="0 0 20 20" className={`size-[15px] sm:size-[17px] ${mark}`} fill="none" stroke="currentColor" strokeWidth="2.2">
+              <path d="M2 7V2h5M13 2h5v5M18 13v5h-5M7 18H2v-5" />
+              <rect x="6.5" y="6.5" width="7" height="7" />
+            </svg>
+          </button>
+          <button type="button" aria-label="Zoom out" onClick={onOut} disabled={fitted} className={extra}>
+            <svg aria-hidden="true" viewBox="0 0 20 20" className={`size-[14px] sm:size-[16px] ${mark}`} fill="none" stroke="currentColor" strokeWidth="2.8">
+              <path d="M3 10h14" />
+            </svg>
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -1384,18 +1512,15 @@ const subtitle = (p: Project) => p.discipline ?? (p.category === 'video' ? 'Vide
 /**
  * The strip under the artwork: the project's name (and discipline), then its buttons. One row where
  * there's room; on phones the name sits above a full-width row of buttons, within thumb's reach.
- * Reports its height so the artwork can fit above it.
+ * Reports its height so the artwork can fit above it. (Zoom lives in the top left corner.)
  */
 function CaptionBar({
   project,
   onHeight,
-  tools,
   children,
 }: {
   project: Project
   onHeight: (h: number) => void
-  /** The + / fit / - buttons: beside the title on phones, after the other buttons on wider screens. */
-  tools?: ReactNode
   children: ReactNode
 }) {
   const ref = useRef<HTMLDivElement>(null)
@@ -1411,17 +1536,15 @@ function CaptionBar({
   return (
     <div
       ref={ref}
-      className="viewer-caption flex flex-wrap items-center justify-center gap-x-6 gap-y-3 px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))] font-ddc text-sand sm:px-6 md:pb-5 short:pt-2 short:pb-2"
+      className="viewer-caption flex flex-wrap items-center justify-center gap-x-6 gap-y-3 px-4 pt-3 pb-[max(14px,env(safe-area-inset-bottom))] font-ddc text-sand sm:px-6 md:pb-5 short:gap-x-4 short:gap-y-2 short:pt-2 short:pb-2"
     >
       <div className="flex min-w-0 items-center gap-3 max-sm:w-full">
-        <div className={`min-w-0 flex-1 sm:text-left ${tools ? 'text-left' : 'text-center'}`}>
-          <p className="truncate text-[18px] leading-tight sm:text-[20px] wide:text-[24px]">{project.title}</p>
+        <div className="min-w-0 flex-1 text-center sm:text-left">
+          <p className="truncate text-[18px] leading-tight sm:text-[20px] wide:text-[24px] short:text-[17px]">{project.title}</p>
           {sub && <p className="mt-0.5 truncate text-[12px] leading-tight tracking-[0.08em] uppercase opacity-70 wide:text-[14px]">{sub}</p>}
         </div>
-        {tools && <div className="flex-none sm:hidden">{tools}</div>}
       </div>
       {children && <div className="flex gap-2 max-sm:w-full sm:gap-3">{children}</div>}
-      {tools && <div className="flex-none max-sm:hidden">{tools}</div>}
     </div>
   )
 }
@@ -1467,7 +1590,7 @@ function DescriptionSheet({
       style={side ? { width } : undefined}
       className={`absolute bottom-0 overflow-y-auto bg-ink font-ddc text-sand ${
         side
-          ? 'top-0 right-0 border-l-2 border-sand/25 px-8 pt-[88px] pb-10 short:px-5 short:pt-[64px] wide:px-10'
+          ? 'top-0 right-0 border-l-2 border-sand/25 px-8 pt-[88px] pb-10 short:px-5 short:pt-[60px] wide:px-10'
           : 'inset-x-0 max-h-[40dvh] border-t-2 border-sand/25 px-6 pt-4 pb-[max(20px,env(safe-area-inset-bottom))] md:px-10'
       }`}
     >

@@ -29,8 +29,14 @@ function publicFolderIndex(): Plugin {
 }
 
 /**
+ * The bundle number shown in the dev preview's tag ("DEV 23"): the N of the edf-dev-N.bundle this
+ * code came in. Bumped with each bundle, so the preview shows at a glance which one it's running.
+ */
+const DEV_BUNDLE = 23
+
+/**
  * The dev preview (built with SITE_ENV=dev, published at /dev/): keep it out of search engines and
- * put a small DEV tag in the corner so it's never mistaken for the live site.
+ * put a small DEV tag (with the bundle number) in the corner so it's never mistaken for the live site.
  */
 function devPreview(): Plugin {
   return {
@@ -44,7 +50,7 @@ function devPreview(): Plugin {
           '</body>',
           '  <div aria-hidden="true" style="position:fixed;right:8px;bottom:8px;z-index:2147483647;pointer-events:none;' +
             'background:#f15b49;color:#1d262c;font:700 12px/1 system-ui,sans-serif;letter-spacing:.12em;padding:6px 8px;' +
-            'border:2px solid #1d262c;border-top:0;opacity:.9">DEV</div>\n  </body>',
+            `border:2px solid #1d262c;border-top:0;opacity:.9">DEV ${DEV_BUNDLE}</div>\n  </body>`,
         )
     },
   }
