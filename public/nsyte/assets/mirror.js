@@ -78,13 +78,28 @@
         if (box.dataset.widget) turnstile.remove(box.dataset.widget)
         // Long enough to finish a click-through challenge; it fails the send only if it never answers.
         var timer = setTimeout(function () { reject(new Error('turnstile timed out')) }, 120000)
-        box.dataset.widget = turnstile.render(box, {
+        // A check that hits an error is run again (up to 3 tries) before the send fails, as on the
+        // main site (src/lib/turnstile.ts): they happen now and then, more often in phone browsers.
+        var tries = 1
+        var id = turnstile.render(box, {
           sitekey: TURNSTILE_SITE_KEY,
           appearance: 'interaction-only',
           theme: 'light',
+          retry: 'never',
           callback: function (token) { clearTimeout(timer); resolve(token) },
-          'error-callback': function () { clearTimeout(timer); reject(new Error('turnstile error')) },
+          'error-callback': function (code) {
+            if (tries >= 3) {
+              clearTimeout(timer)
+              reject(new Error('turnstile error ' + code))
+            } else {
+              tries++
+              setTimeout(function () { turnstile.reset(id) }, 800)
+            }
+            return true
+          },
+          'timeout-callback': function () { clearTimeout(timer); reject(new Error('turnstile timeout')) },
         })
+        box.dataset.widget = id
       })
     })
   }

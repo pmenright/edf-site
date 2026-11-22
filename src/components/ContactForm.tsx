@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { site } from '../content'
 import { POPUP_BUTTON, POPUP_BUTTON_FILLED } from '../lib/popup'
-import { clearCheck, humanCheck, loadTurnstile } from '../lib/turnstile'
+import { SendError, clearCheck, humanCheck, loadTurnstile } from '../lib/turnstile'
 
 const { endpoint, turnstileSiteKey } = site.forms
 
 type Status = 'idle' | 'sending' | 'sent' | 'failed'
+
+/** The dev preview (and npm run dev) say why a send failed, under the note, for Jim to read. */
+const SHOW_REASON = __DEV_PREVIEW__ || import.meta.env.DEV
 
 const LABEL_TEXT = 'font-ddc text-[14px] tracking-[0.12em] uppercase phone-short:leading-[1.2]'
 const LABEL = `block ${LABEL_TEXT}`
@@ -21,6 +24,7 @@ const FIELD =
  */
 export function ContactForm() {
   const [status, setStatus] = useState<Status>('idle')
+  const [reason, setReason] = useState('')
   const form = useRef<HTMLFormElement>(null)
   const check = useRef<HTMLDivElement>(null)
   const note = useRef<HTMLParagraphElement>(null)
@@ -49,11 +53,17 @@ export function ContactForm() {
       data.set('cf-turnstile-response', await humanCheck(check.current!, turnstileSiteKey, 'dark'))
       // Sent URL-encoded (a plain form post): read the same way from every browser.
       const body = new URLSearchParams([...data].flatMap(([key, value]) => (typeof value === 'string' ? [[key, value]] : [])))
-      const res = await fetch(endpoint, { method: 'POST', body, headers: { Accept: 'application/json' } })
-      if (!res.ok) throw new Error(String(res.status))
+      const res = await fetch(endpoint, { method: 'POST', body, headers: { Accept: 'application/json' } }).catch((err: unknown) => {
+        throw new SendError(`could not reach the relay (${err instanceof Error ? err.message : 'network'})`)
+      })
+      if (!res.ok) {
+        const answer = (await res.json().catch(() => ({}))) as { error?: string }
+        throw new SendError(`relay said ${res.status}${answer.error ? ` (${answer.error})` : ''}`)
+      }
       form.current?.reset()
       setStatus('sent')
-    } catch {
+    } catch (err) {
+      setReason(err instanceof SendError ? err.message : err instanceof Error ? err.message : 'unknown')
       setStatus('failed')
     } finally {
       clearCheck(check.current)
@@ -119,6 +129,9 @@ export function ContactForm() {
           className="mt-3 font-text text-[16px] leading-[1.35] tracking-normal text-balance normal-case empty:mt-0 phone-short:mt-1.5"
         >
           {status === 'failed' && "That didn't send. Please try again in a moment."}
+          {status === 'failed' && SHOW_REASON && reason && (
+            <span className="mt-1 block text-[13px] leading-[1.3] opacity-70">Dev preview only: {reason}</span>
+          )}
         </p>
       </div>
     </form>

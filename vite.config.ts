@@ -32,7 +32,7 @@ function publicFolderIndex(): Plugin {
  * The bundle number shown in the dev preview's tag ("DEV 23"): the N of the edf-dev-N.bundle this
  * code came in. Bumped with each bundle, so the preview shows at a glance which one it's running.
  */
-const DEV_BUNDLE = 24
+const DEV_BUNDLE = 25
 
 /**
  * The dev preview (built with SITE_ENV=dev, published at /dev/): keep it out of search engines and
@@ -96,6 +96,8 @@ function fingerprintStaticPages(): Plugin {
 // BASE_PATH: "/" for the live site; the dev preview builds with "/dev/".
 export default defineConfig({
   base: process.env.BASE_PATH ?? '/',
+  // true only in the dev preview build (SITE_ENV=dev): extra details for Jim, like why a send failed.
+  define: { __DEV_PREVIEW__: JSON.stringify(process.env.SITE_ENV === 'dev') },
   plugins: [publicFolderIndex(), devPreview(), fingerprintStaticPages(), react(), tailwindcss()],
   build: {
     rollupOptions: {
