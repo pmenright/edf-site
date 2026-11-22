@@ -12,7 +12,7 @@ function env(extra = {}) {
     TURNSTILE_SECRET: 'secret-123',
     FROM_ADDRESS: 'website@forms.enrightdesignfoundry.com',
     FROM_NAME: 'EDF website',
-    MAIL_TO: 'owner@example.com',
+    TO_ADDRESS: 'owner@example.com',
     ALLOWED_ORIGINS: `${ORIGIN},http://localhost:5173`,
     EMAIL: { send: async (m) => { sent.push(m); return { messageId: 'x' } } },
     ...extra,
@@ -193,14 +193,14 @@ test('unsupported body type is refused', async () => {
   assert.equal(r.status, 400)
 })
 
-test('MAIL_TO with stray spaces or a line break still sends to the address', async () => {
-  const r = await worker.fetch(post(good), env({ MAIL_TO: '  owner@example.com\n' }))
+test('TO_ADDRESS with stray spaces or a line break still sends to the address', async () => {
+  const r = await worker.fetch(post(good), env({ TO_ADDRESS: '  owner@example.com\n' }))
   assert.equal(r.status, 200)
   assert.equal(sent[0].to, 'owner@example.com')
 })
 
-test('MAIL_TO that is only spaces: not configured', async () => {
-  const r = await worker.fetch(post(good), env({ MAIL_TO: '   ' }))
+test('TO_ADDRESS that is only spaces: not configured', async () => {
+  const r = await worker.fetch(post(good), env({ TO_ADDRESS: '   ' }))
   assert.equal(r.status, 500)
   assert.equal(sent.length, 0)
 })

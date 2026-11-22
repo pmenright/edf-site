@@ -32,7 +32,7 @@ function publicFolderIndex(): Plugin {
  * The bundle number shown in the dev preview's tag ("DEV 23"): the N of the edf-dev-N.bundle this
  * code came in. Bumped with each bundle, so the preview shows at a glance which one it's running.
  */
-const DEV_BUNDLE = 26
+const DEV_BUNDLE = 27
 
 /**
  * The dev preview (built with SITE_ENV=dev, published at /dev/): keep it out of search engines and

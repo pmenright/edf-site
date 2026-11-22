@@ -5,8 +5,12 @@ to this small Cloudflare Worker. It checks that the post came from the site and 
 Turnstile (the bot check), then emails it to Jim's Gmail, with Reply going straight to the visitor.
 It stores nothing and logs nothing about the messages. It's free (Cloudflare's free plan).
 
-The address it sends to is a secret (`MAIL_TO`), not in this repo: since November 21, 2026 Jim's
-email address isn't anywhere on the site or in its files, and the forms are the way to reach him.
+The address it sends to is `TO_ADDRESS` in `wrangler.jsonc`, and the send binding there is locked to
+that one address (`destination_address`). Keep the two together and keep this setup: on Nov 21, 2026
+the address was moved to a `MAIL_TO` secret with the binding unlocked, and from the deploy on Nov 22
+every send failed with `E_VALIDATION_ERROR` until this setup was put back (see
+`claude/EDF-Forms-Review-2026-11-22.md` in the Portfolio project). The address is in this public repo
+because of that; taking it out again is a separate job, tested with a real send.
 
 ## One-time setup
 
@@ -43,13 +47,11 @@ From this folder on your Mac:
 cd ~/Documents/Portfolio\ Site/React\ Tailwind\ Rebuild\ 2026/edf-site/form-relay
 npx wrangler login
 npx wrangler secret put TURNSTILE_SECRET
-npx wrangler secret put MAIL_TO
 npx wrangler deploy
 ```
 
 - `login` opens the browser to approve Wrangler (Cloudflare's command-line tool).
 - `secret put TURNSTILE_SECRET` asks for the Turnstile **Secret Key**: paste it.
-- `secret put MAIL_TO` asks for the address messages go to: your verified Gmail, spelled exactly as it shows under Email Routing, Destination addresses (Cloudflare refuses any other address, and the forms fail with "relay said 502"). Spaces around it are ignored.
 - `deploy` may ask you to pick a workers.dev name, then prints the relay's address, like
   `https://edf-forms.yourname.workers.dev`.
 
@@ -68,13 +70,15 @@ it "Not spam".
 
 None routine. Things worth knowing:
 
-- **Changing the Turnstile secret, or where messages go:** run `npx wrangler secret put TURNSTILE_SECRET`
-  (or `MAIL_TO`) again. A new `MAIL_TO` has to be a verified destination in Email Routing first.
+- **Changing the Turnstile secret:** run `npx wrangler secret put TURNSTILE_SECRET` again.
+- **Changing where messages go:** change both `destination_address` and `TO_ADDRESS` in
+  `wrangler.jsonc` (to a destination already verified in Email Routing), deploy, and send a real test.
+- **After any deploy, send a real message and check it arrives.** The automated tests stand in for
+  Cloudflare's sending, so they can't catch what Cloudflare itself rejects.
 - **Something not arriving?** `npx wrangler tail` shows the relay's activity live while you send a
   test (it logs only Cloudflare's error code on a failed send, never the message).
-- **Settings** (sender address and which pages may post) are in `wrangler.jsonc`; run
-  `npx wrangler deploy` after changing them. Cloudflare only delivers to verified destination
-  addresses, and the Worker only sends to `MAIL_TO`.
+- **Settings** (sender, recipient and which pages may post) are in `wrangler.jsonc`; run
+  `npx wrangler deploy` after changing them.
 - **Tests:** `npm run test:forms` from the site's folder.
 
 ## What happens to a message

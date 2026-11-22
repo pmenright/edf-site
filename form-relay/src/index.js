@@ -56,9 +56,11 @@ export default {
     }
     if (request.method !== 'POST') return reply(405, { ok: false, error: 'method' })
     if (!okOrigin) return reply(403, { ok: false, error: 'origin' })
-    // Where messages go: the MAIL_TO secret, with any stray spaces or line breaks from pasting it in
-    // taken off (Cloudflare refuses an address that isn't exactly a verified one).
-    const mailTo = String(env.MAIL_TO || '').trim()
+    // Where messages go: TO_ADDRESS in wrangler.jsonc, the one address the send binding is locked
+    // to. (This is the setup that delivered; a Nov 21 change moved it to a MAIL_TO secret and
+    // unlocked the binding, and every send failed with E_VALIDATION_ERROR until it was put back,
+    // Nov 22, 2026.)
+    const mailTo = String(env.TO_ADDRESS || '').trim()
     if (!env.TURNSTILE_SECRET || !env.FROM_ADDRESS || !mailTo || !env.EMAIL) {
       console.error('form relay is not configured')
       return reply(500, { ok: false, error: 'not-configured' })
@@ -98,7 +100,7 @@ export default {
 
     const message = {
       from: { email: env.FROM_ADDRESS, name: env.FROM_NAME || 'Website form' },
-      to: mailTo, // a secret (npx wrangler secret put MAIL_TO), so the address isn't in the repo
+      to: mailTo,
       subject: clip(`${formName}: message${name ? ` from ${name}` : ''}`, 150),
       text,
     }

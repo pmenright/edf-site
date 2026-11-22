@@ -13,7 +13,7 @@ npm run preview    # serve dist/ locally
 
 ## Working on dev (nothing reaches the live site until you merge)
 
-Two branches: `main` is the live site, `dev` is where changes happen. Every push to `dev` publishes a preview at **https://enrightdesignfoundry.com/dev/** (it carries a red DEV tag with the bundle number, like DEV 26, and when a contact form send fails it shows the reason under the note, and is hidden from search engines); the live site is rebuilt from `main` in the same run and doesn't change.
+Two branches: `main` is the live site, `dev` is where changes happen. Every push to `dev` publishes a preview at **https://enrightdesignfoundry.com/dev/** (it carries a red DEV tag with the bundle number, like DEV 27, and when a contact form send fails it shows the reason under the note, and is hidden from search engines); the live site is rebuilt from `main` in the same run and doesn't change.
 
 ```bash
 git switch dev          # work here
